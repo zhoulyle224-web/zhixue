@@ -33,8 +33,11 @@
         <div class="login-error" id="loginError" role="alert"></div>
         <button class="btn primary login-submit" type="submit"><span>登录并进入教师端</span><i>→</i></button>
       </form>
-      <div class="demo-accounts">
-        <span>演示凭据</span><p id="demoCredential">教师账号：teacher2026　密码：demo123</p>
+      <div class="demo-accounts expanded">
+        <div class="demo-title"><span>可用演示账号</span><small>点击账号可直接填入</small></div>
+        <button type="button" data-demo-account="teacher"><i>教</i><span><b>教师账号</b><code>teacher2026　/　demo123</code><small>可进入教师端，也可切换学生视角</small></span></button>
+        <button type="button" data-demo-account="student"><i>学</i><span><b>学生账号</b><code>student2026　/　demo123</code><small>仅允许进入学生端</small></span></button>
+        <p id="demoCredential" hidden></p>
       </div>
       <p class="login-note">继续登录即表示你了解：本页面只模拟产品流程，不提供真实身份认证或数据安全保护。</p>
     </section>
