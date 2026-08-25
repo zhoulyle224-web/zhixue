@@ -1,3 +1,23 @@
+const AUTH_KEY = 'zhixue_demo_auth_v1';
+const PAGE = document.body.dataset.page || 'home';
+const authAccounts = {
+  teacher:{account:'teacher2026',password:'demo123',name:'演示教师',target:'teacher.html'},
+  student:{account:'student2026',password:'demo123',name:'演示学生',target:'student.html'}
+};
+
+function readAuth(){
+  for(const store of [localStorage,sessionStorage]){try{const v=JSON.parse(store.getItem(AUTH_KEY));if(v?.role&&authAccounts[v.role])return v}catch{}}
+  return null;
+}
+function clearAuth(){localStorage.removeItem(AUTH_KEY);sessionStorage.removeItem(AUTH_KEY)}
+function protectWorkspace(){
+  if(!['teacher','student'].includes(PAGE))return;
+  const auth=readAuth();
+  if(!auth||auth.role!==PAGE){location.replace(`login.html?role=${PAGE}&next=${PAGE}.html`);return}
+  const identity=document.querySelector('#userIdentity');if(identity)identity.textContent=auth.name;
+}
+protectWorkspace();
+
 const KEY = 'zhixue_learning_loop_v2';
 const seed = {
   courses: [
@@ -42,6 +62,29 @@ function course(){return state.courses.find(x=>x.id===state.activeCourse)||state
 function currentClass(){const c=course();return c?.classes.find(x=>x.id===state.activeClass)||c?.classes[0]}
 function empty(title,desc){return `<div class="empty"><b>${title}</b>${desc}</div>`}
 function download(name,content,type='application/json'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+
+function setupLogin(){
+  if(PAGE!=='login')return;
+  const params=new URLSearchParams(location.search);
+  let role=params.get('role')==='student'?'student':'teacher';
+  const account=document.querySelector('#loginAccount'),password=document.querySelector('#loginPassword'),error=document.querySelector('#loginError'),submit=document.querySelector('.login-submit span'),credential=document.querySelector('#demoCredential');
+  function setRole(next){role=next;document.querySelectorAll('[data-login-role]').forEach(x=>x.classList.toggle('on',x.dataset.loginRole===role));submit.textContent=`登录并进入${role==='teacher'?'教师端':'学生端'}`;credential.textContent=`${role==='teacher'?'教师':'学生'}账号：${authAccounts[role].account}　密码：${authAccounts[role].password}`;error.textContent='';account.value='';password.value='';account.focus()}
+  document.querySelectorAll('[data-login-role]').forEach(x=>x.addEventListener('click',()=>setRole(x.dataset.loginRole)));
+  document.querySelector('#fillDemo')?.addEventListener('click',()=>{account.value=authAccounts[role].account;password.value=authAccounts[role].password;error.textContent='';toast('已填入演示账号')});
+  document.querySelector('#togglePassword')?.addEventListener('click',e=>{const show=password.type==='password';password.type=show?'text':'password';e.currentTarget.textContent=show?'隐藏':'显示'});
+  document.querySelector('#loginForm')?.addEventListener('submit',e=>{
+    e.preventDefault();const expected=authAccounts[role];
+    if(!account.value.trim()||!password.value){error.textContent='请填写演示账号和密码';return}
+    if(account.value.trim()!==expected.account||password.value!==expected.password){error.textContent='演示账号或密码不正确，可点击“填入演示账号”';password.focus();return}
+    clearAuth();const auth={role,name:expected.name,account:expected.account,loginAt:new Date().toISOString()};const store=document.querySelector('#rememberLogin').checked?localStorage:sessionStorage;store.setItem(AUTH_KEY,JSON.stringify(auth));
+    document.querySelector('.login-submit').classList.add('loading');submit.textContent='登录成功，正在进入';error.textContent='';toast('身份验证成功');setTimeout(()=>location.href=expected.target,420);
+  });
+  const existing=readAuth();if(existing&&authAccounts[existing.role]){const quick=document.createElement('button');quick.className='continue-session';quick.textContent=`继续以“${existing.name}”进入`;quick.onclick=()=>location.href=authAccounts[existing.role].target;document.querySelector('.demo-accounts').before(quick)}
+  setRole(role);
+}
+setupLogin();
+
+document.querySelector('#logoutBtn')?.addEventListener('click',()=>{clearAuth();toast('已退出模拟账号');setTimeout(()=>location.href='index.html',260)});
 
 const viewCopy={
   teacherHome:['工作台首页','从班级数据出发，完成研判、教学调整与反馈复盘。'],classes:['课程与班级','先建立课程，再按实际教学对象划分班级。'],import:['数据导入与质检','导入匿名学习数据，并在分析前处理数据质量问题。'],analysis:['学情智能研判','查看班级、学生与知识点掌握情况及其依据。'],tasks:['分层任务发布','确认智能体生成的差异化任务并发布到学生端。'],inbox:['学生问题与反馈','处理高频问题，并将结果重新纳入教学研判。'],reports:['报告与复盘','导出学情、答疑记录与教学改进建议。'],
