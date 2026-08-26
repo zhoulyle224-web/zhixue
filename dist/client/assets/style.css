@@ -90,3 +90,64 @@
 .am-note{display:flex;flex-direction:column;gap:6px}
 .am-body{display:flex;flex-direction:column;gap:14px}
 @media(max-width:760px){.iter-rows>div{grid-template-columns:1fr}.iter-rows small{grid-column:1}.iter-plan .iter-rows>div{grid-template-columns:1fr}}
+
+/* 沉浸式视觉层：粒子、鼠标追光与卡片高光 */
+body{
+  --mouse-x:50vw;
+  --mouse-y:35vh;
+  background:
+    radial-gradient(circle at 52% -18%,rgba(72,116,255,.16),transparent 34%),
+    radial-gradient(circle at 92% 86%,rgba(138,76,255,.10),transparent 31%),
+    var(--bg);
+  isolation:isolate;
+}
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  background:radial-gradient(520px circle at var(--mouse-x) var(--mouse-y),rgba(81,210,255,.115),rgba(89,111,255,.045) 34%,transparent 69%);
+  transition:opacity .35s ease;
+}
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  opacity:.15;
+  background-image:linear-gradient(rgba(119,163,225,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(119,163,225,.055) 1px,transparent 1px);
+  background-size:64px 64px;
+  mask-image:linear-gradient(to bottom,black,transparent 82%);
+}
+#particles{opacity:.82;filter:drop-shadow(0 0 5px rgba(99,196,255,.35))}
+.orb{animation:orbFloat 14s ease-in-out infinite alternate;will-change:transform}
+.orb.two{animation-duration:18s;animation-delay:-6s}
+@keyframes orbFloat{from{transform:translate3d(-2%,0,0) scale(.94)}to{transform:translate3d(7%,-6%,0) scale(1.08)}}
+.logo{position:relative;overflow:hidden;animation:logoBreath 3.8s ease-in-out infinite}
+.logo::after{content:"";position:absolute;inset:-55%;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.48) 49%,transparent 63%);transform:translateX(-70%) rotate(12deg);animation:logoSweep 4.6s ease-in-out infinite}
+@keyframes logoBreath{50%{box-shadow:0 0 36px rgba(67,216,255,.46)}}
+@keyframes logoSweep{0%,58%{transform:translateX(-76%) rotate(12deg)}82%,100%{transform:translateX(78%) rotate(12deg)}}
+.card,.role-card,.login-card,.skill-zone,.process-banner{--spot-x:50%;--spot-y:50%;position:relative}
+.card::before,.role-card::before,.login-card::before,.skill-zone::before,.process-banner::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  pointer-events:none;
+  opacity:0;
+  background:radial-gradient(360px circle at var(--spot-x) var(--spot-y),rgba(126,226,255,.13),rgba(100,121,255,.045) 38%,transparent 72%);
+  transition:opacity .28s ease;
+}
+.card:hover::before,.role-card:hover::before,.login-card:hover::before,.skill-zone:hover::before,.process-banner:hover::before{opacity:1}
+.card,.role-card,.login-card{transition:border-color .3s ease,box-shadow .3s ease,transform .3s cubic-bezier(.2,.8,.2,1)}
+.card:hover,.login-card:hover{border-color:rgba(106,194,255,.31);box-shadow:0 22px 64px rgba(0,8,27,.31),0 0 0 1px rgba(111,208,255,.045) inset}
+.btn.primary{position:relative;overflow:hidden;isolation:isolate}
+.btn.primary::after{content:"";position:absolute;top:-45%;bottom:-45%;width:35%;left:-55%;z-index:-1;background:linear-gradient(90deg,transparent,rgba(255,255,255,.42),transparent);transform:skewX(-20deg);transition:left .65s ease}
+.btn.primary:hover::after{left:125%}
+.flow-step b,.skill-icon,.avatar,.user-chip i{box-shadow:0 0 0 1px rgba(148,207,255,.08) inset,0 8px 24px rgba(36,100,198,.13)}
+.skill-grid .panel:hover .skill-icon{transform:translateY(-2px) rotate(-3deg);box-shadow:0 0 28px rgba(67,216,255,.21)}
+.skill-icon{transition:transform .3s ease,box-shadow .3s ease}
+@media (prefers-reduced-motion:reduce){.orb,.logo,.logo::after,.pulse{animation:none!important}.card,.role-card,.login-card,.btn{transition-duration:.01ms!important}body::before{display:none}}
+@media(max-width:720px){body::before{background:radial-gradient(330px circle at var(--mouse-x) var(--mouse-y),rgba(81,210,255,.08),transparent 70%)}body::after{background-size:48px 48px;opacity:.1}}

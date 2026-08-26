@@ -227,8 +227,42 @@ document.querySelector('#refreshAnalysis')?.addEventListener('click',()=>{
 });
 renderSkillStatus();
 
-function particles(){const c=document.querySelector('#particles');if(!c)return;const ctx=c.getContext('2d');let w,h,points;function size(){w=c.width=innerWidth;h=c.height=innerHeight;points=Array.from({length:Math.min(70,Math.floor(w/22))},()=>({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.18,vy:(Math.random()-.5)*.18,r:Math.random()*1.3+.35}))}function frame(){ctx.clearRect(0,0,w,h);points.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>w)p.vx*=-1;if(p.y<0||p.y>h)p.vy*=-1;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle='rgba(112,170,255,.42)';ctx.fill()});requestAnimationFrame(frame)}size();frame();addEventListener('resize',size)}
-particles();renderAll();loadFrontendDatabase();
+function visualEffects(){
+  const c=document.querySelector('#particles');if(!c)return;
+  const ctx=c.getContext('2d'),reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const pointer={x:innerWidth/2,y:innerHeight*.34,active:false};
+  let w=0,h=0,dpr=1,points=[],raf=0;
+  function size(){
+    w=innerWidth;h=innerHeight;dpr=Math.min(devicePixelRatio||1,2);
+    c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);c.style.width=w+'px';c.style.height=h+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    const count=reduce?26:Math.min(105,Math.max(42,Math.floor(w/17)));
+    points=Array.from({length:count},()=>({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.24,vy:(Math.random()-.5)*.24,r:Math.random()*1.45+.35,a:Math.random()*.35+.2,phase:Math.random()*Math.PI*2,hue:Math.random()>.76?'167,132,255':'91,187,255'}));
+  }
+  function move(e){
+    pointer.x=e.clientX;pointer.y=e.clientY;pointer.active=true;
+    document.body.style.setProperty('--mouse-x',pointer.x+'px');document.body.style.setProperty('--mouse-y',pointer.y+'px');
+    const target=e.target.closest?.('.card,.role-card,.login-card,.skill-zone,.process-banner');
+    if(target){const r=target.getBoundingClientRect();target.style.setProperty('--spot-x',(pointer.x-r.left)+'px');target.style.setProperty('--spot-y',(pointer.y-r.top)+'px')}
+  }
+  function draw(time=0){
+    ctx.clearRect(0,0,w,h);
+    for(let i=0;i<points.length;i++){
+      const p=points[i];
+      if(!reduce){p.x+=p.vx;p.y+=p.vy;if(p.x<-8||p.x>w+8)p.vx*=-1;if(p.y<-8||p.y>h+8)p.vy*=-1}
+      if(pointer.active&&!reduce){const dx=p.x-pointer.x,dy=p.y-pointer.y,d=Math.hypot(dx,dy)||1;if(d<175){const push=(175-d)/175*.009;p.vx+=dx/d*push;p.vy+=dy/d*push;p.vx*=.994;p.vy*=.994}}
+      const alpha=p.a*(.72+.28*Math.sin(time*.0012+p.phase));
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=`rgba(${p.hue},${alpha})`;ctx.fill();
+      for(let j=i+1;j<points.length;j++){const q=points[j],dx=p.x-q.x,dy=p.y-q.y,dist2=dx*dx+dy*dy;if(dist2<9600){const line=.115*(1-Math.sqrt(dist2)/98);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.strokeStyle=`rgba(93,169,255,${line})`;ctx.lineWidth=.55;ctx.stroke()}}
+    }
+    if(pointer.active){const glow=ctx.createRadialGradient(pointer.x,pointer.y,0,pointer.x,pointer.y,115);glow.addColorStop(0,'rgba(112,222,255,.10)');glow.addColorStop(1,'rgba(97,127,255,0)');ctx.fillStyle=glow;ctx.fillRect(pointer.x-115,pointer.y-115,230,230)}
+    if(!reduce)raf=requestAnimationFrame(draw);
+  }
+  addEventListener('pointermove',move,{passive:true});addEventListener('pointerleave',()=>pointer.active=false);addEventListener('resize',size,{passive:true});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!reduce&&!raf)raf=requestAnimationFrame(draw)});
+  size();draw();
+}
+visualEffects();renderAll();loadFrontendDatabase();
 
 // —— Skill 接入：课程内容智能迭代（teacher 端 analysis 视图） ——
 function mountCourseIterationFeature(){
