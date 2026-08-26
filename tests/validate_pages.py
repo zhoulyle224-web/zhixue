@@ -1,5 +1,6 @@
 from html.parser import HTMLParser
 from pathlib import Path
+import json
 import re
 
 root = Path(__file__).parents[1] / "github-pages"
@@ -21,4 +22,21 @@ login = (root / "login.html").read_text(encoding="utf-8")
 assert 'id="loginForm"' in login
 assert 'data-login-role="teacher"' in login
 assert 'data-login-role="student"' in login
+
+teacher = (root / "teacher.html").read_text(encoding="utf-8")
+student = (root / "student.html").read_text(encoding="utf-8")
+app_js = (root / "assets" / "app.js").read_text(encoding="utf-8")
+snapshot = json.loads((root / "assets" / "demo-data.json").read_text(encoding="utf-8"))
+worker = (root.parent / "worker" / "index.js").read_text(encoding="utf-8")
+hosting = json.loads((root.parent / ".openai" / "hosting.json").read_text(encoding="utf-8"))
+
+assert 'id="databaseStatus"' in teacher
+assert 'id="databaseStatus"' in student
+assert "/api/catalog" in app_js and "/api/dashboard" in app_js
+assert "env.DB.prepare" in worker
+assert hosting["d1"] == "DB"
+assert snapshot["meta"]["studentCount"] == 180
+assert snapshot["meta"]["tableCount"] >= 30
+assert len(snapshot["teacher"]) >= 30
+assert "student:S240101" in snapshot["student"]
 print("MULTI_PAGE_SITE_OK")

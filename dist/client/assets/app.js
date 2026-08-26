@@ -40,14 +40,14 @@ const seed = {
 
 let state = loadState();
 let activeFilter = 'all';
-const knowledge = [
+let knowledge = [
   {name:'人工智能基础',value:86,color:'#46dfa1'},
   {name:'机器学习流程',value:74,color:'#43d8ff'},
   {name:'数据预处理',value:69,color:'#617fff'},
   {name:'模型评估',value:54,color:'#ffb45e'},
   {name:'混淆矩阵',value:58,color:'#ff8e7c'}
 ];
-const studentKnowledge = [
+let studentKnowledge = [
   {name:'人工智能基础',value:86,color:'#46dfa1'},
   {name:'机器学习流程',value:67,color:'#43d8ff'},
   {name:'数据预处理',value:72,color:'#617fff'},
@@ -65,6 +65,17 @@ function course(){return state.courses.find(x=>x.id===state.activeCourse)||state
 function currentClass(){const c=course();return c?.classes.find(x=>x.id===state.activeClass)||c?.classes[0]}
 function empty(title,desc){return `<div class="empty"><b>${title}</b>${desc}</div>`}
 function download(name,content,type='application/json'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+
+let databasePayload=null;
+let activeStudentDashboard=null;
+function setText(selector,value){const el=document.querySelector(selector);if(el&&value!==undefined&&value!==null)el.textContent=value}
+function setDatabaseStatus(mode,meta={}){const el=document.querySelector('#databaseStatus');if(!el)return;el.classList.remove('loading','fallback');if(mode==='database'){el.textContent=`● 云端数据库 · ${Number(meta.recordCount||0).toLocaleString()} 条`;el.title=`D1 数据源，${meta.tableCount||0} 类业务表`}else if(mode==='fallback'){el.classList.add('fallback');el.textContent='● 本地数据快照';el.title='当前环境未连接云端数据库，已使用同源脱敏快照'}else{el.classList.add('loading');el.innerHTML='<i></i>数据库连接中'}}
+function databaseCourses(catalog){const map=new Map();catalog.forEach(row=>{const id=`db-${row.offering_id}`;if(!map.has(id))map.set(id,{id,name:row.course_name,code:row.course_code,color:['#7658ef','#29a9ce','#617fff','#2ccf91'][row.offering_id%4],offeringId:row.offering_id,classes:[]});map.get(id).classes.push({id:`db-${row.class_id}`,classId:row.class_id,name:row.class_name,students:row.student_count,imported:true,contextKey:`teacher:${row.offering_id}:${row.class_id}`})});return [...map.values()]}
+async function fetchDatabase(path){const response=await fetch(path,{headers:{accept:'application/json'}});if(!response.ok)throw new Error(`HTTP ${response.status}`);const payload=await response.json();if(!payload.success)throw new Error(payload.error||'database_error');return payload}
+function currentContextKey(){return currentClass()?.contextKey||''}
+async function loadTeacherDashboard(){if(PAGE!=='teacher')return;const key=currentContextKey();if(!key)return;let data;try{data=(await fetchDatabase(`/api/dashboard?audience=teacher&context=${encodeURIComponent(key)}`)).data}catch{data=databasePayload?.teacher?.[key]}if(!data)return;knowledge=data.knowledge||knowledge;renderAll();setText('#studentCount',data.studentCount);setText('#masteryAvg',`${data.averageMastery}%`);setText('#weakCount',data.weakCount);setText('#pendingCount',data.pendingCount);setText('#classAverage',data.averageScore);setText('#classPassRate',`${data.passRate}%`);setText('#classAttendance',`${data.attendanceRate}%`);setText('#classRiskCount',data.riskCount);setText('#tierTotal',data.studentCount);setText('#tierA',data.tiers?.['拓展组']||0);setText('#tierB',data.tiers?.['提升组']||0);setText('#tierC',data.tiers?.['巩固组']||0);const topics=document.querySelector('#databaseHotTopics');if(topics)topics.innerHTML=(data.hotTopics||[]).map(x=>`<span>${esc(x.name)} <b>${x.count}</b></span>`).join('')||'<span>暂无答疑记录</span>';const qs=document.querySelector('#qualitySummary');if(qs)qs.textContent=`数据库已校验 · ${(data.qualityIssues||[]).reduce((sum,x)=>sum+x.count,0)} 条质量记录`}
+function applyStudentCourse(courseId){if(!activeStudentDashboard)return;const selected=activeStudentDashboard.courses.find(x=>x.id===courseId)||activeStudentDashboard.courses[0];if(!selected)return;studentKnowledge=selected.knowledge||studentKnowledge;setText('#studentTier',selected.tier);setText('#studentMastery',`${selected.mastery}%`);setText('#studentScore',Number(selected.score).toFixed(1));state.tasks=(selected.tasks||[]).map((t,i)=>({id:`db-task-${t.id}`,courseId:selected.id,tier:t.tier,title:t.title,detail:t.assigned_reason,duration:`${20+i*5} 分钟`,done:t.status==='已完成'}));state.questions=(selected.qa||[]).map(q=>({id:`db-qa-${q.id}`,courseId:selected.id,text:q.question,status:q.resolved?'done':'pending',answer:q.answer||'',created:q.started_at,source:'课程数据库答疑记录'}));renderAll()}
+async function loadFrontendDatabase(){if(!['teacher','student'].includes(PAGE))return;setDatabaseStatus('loading');let catalogData,source='database';try{catalogData=(await fetchDatabase('/api/catalog')).data}catch{source='fallback';try{databasePayload=await fetch('assets/demo-data.json').then(r=>{if(!r.ok)throw new Error();return r.json()});catalogData={meta:databasePayload.meta,catalog:databasePayload.catalog}}catch{setDatabaseStatus('fallback');return}}if(source==='database'){try{databasePayload=await fetch('assets/demo-data.json').then(r=>r.json())}catch{databasePayload={meta:catalogData.meta,catalog:catalogData.catalog}}}const meta=catalogData.meta||databasePayload?.meta||{};setDatabaseStatus(source,meta);if(PAGE==='teacher'){state.courses=databaseCourses(catalogData.catalog||[]);const preferred=state.courses.find(x=>x.name==='人工智能导论')||state.courses[0];if(!state.courses.some(x=>x.id===state.activeCourse))state.activeCourse=preferred?.id||'';const c=course();if(!c?.classes.some(x=>x.id===state.activeClass))state.activeClass=c?.classes[0]?.id||'';renderAll();await loadTeacherDashboard()}else{let data;try{data=(await fetchDatabase('/api/dashboard?audience=student&context=student%3AS240101')).data}catch{data=databasePayload?.student?.['student:S240101']}if(!data)return;activeStudentDashboard=data;state.courses=(data.courses||[]).map(x=>({id:x.id,name:x.course_name,code:x.course_code,color:['#7658ef','#29a9ce','#617fff','#2ccf91'][x.offering_id%4],classes:[{id:`student-${x.offering_id}`,name:data.student.class_name,students:1,imported:true}]}));state.joined=state.courses.map(x=>x.id);const preferred=data.courses.find(x=>x.course_name==='人工智能导论')||data.courses[0];if(!state.courses.some(x=>x.id===state.activeCourse))state.activeCourse=preferred?.id||'';state.activeClass=course()?.classes[0]?.id||'';setText('#userIdentity',`${data.student.display_name} · 演示账号`);applyStudentCourse(state.activeCourse)}}
 
 function setupLogin(){
   if(PAGE!=='login')return;
@@ -112,9 +123,9 @@ function renderCourseSelectors(){
   const cc=document.querySelector('#currentContext');if(cc&&c)cc.textContent=`${c.name} · ${currentClass()?.name||'未分班'}`;
   const pc=document.querySelector('#publishContext');if(pc&&c)pc.textContent=`${c.name} · ${currentClass()?.name||'未分班'} · ${currentClass()?.students||0} 名学生`;
 }
-document.querySelector('#courseSelect')?.addEventListener('change',e=>{state.activeCourse=e.target.value;state.activeClass=course()?.classes[0]?.id||'';saveState()});
-document.querySelector('#classSelect')?.addEventListener('change',e=>{state.activeClass=e.target.value;saveState()});
-document.querySelector('#studentCourseSelect')?.addEventListener('change',e=>{state.activeCourse=e.target.value;state.activeClass=course()?.classes[0]?.id||'';saveState()});
+document.querySelector('#courseSelect')?.addEventListener('change',async e=>{state.activeCourse=e.target.value;state.activeClass=course()?.classes[0]?.id||'';saveState();await loadTeacherDashboard()});
+document.querySelector('#classSelect')?.addEventListener('change',async e=>{state.activeClass=e.target.value;saveState();await loadTeacherDashboard()});
+document.querySelector('#studentCourseSelect')?.addEventListener('change',e=>{state.activeCourse=e.target.value;state.activeClass=course()?.classes[0]?.id||'';saveState();applyStudentCourse(state.activeCourse)});
 
 function renderTeacherCourses(){const box=document.querySelector('#teacherCourseGrid');if(!box)return;box.innerHTML=state.courses.map(c=>`<article class="card teacher-course ${c.id===state.activeCourse?'selected':''}" style="--course:${c.color}"><header><span class="course-mark">${esc(c.name.slice(0,1))}</span><div><b>${esc(c.name)}</b><small>邀请码 ${esc(c.code)}</small></div><button class="iconbtn" onclick="copyCode('${esc(c.code)}')">复制邀请码</button></header><div class="class-list">${c.classes.map(cl=>`<button onclick="selectContext('${c.id}','${cl.id}')"><span><b>${esc(cl.name)}</b><small>${cl.students} 名学生 · ${cl.imported?'已有数据':'待导入'}</small></span><em>${cl.imported?'可研判':'未导入'}</em></button>`).join('')}</div><footer><input class="field" id="add-${c.id}" placeholder="新班级名称"><button class="btn sm" onclick="addClass('${c.id}')">＋ 添加班级</button></footer></article>`).join('')}
 window.copyCode=async code=>{try{await navigator.clipboard.writeText(code);toast('邀请码已复制')}catch{toast(`邀请码：${code}`)}};
@@ -161,4 +172,4 @@ function renderAll(){fillMastery();renderCourseSelectors();renderTeacherCourses(
 document.querySelector('#refreshAnalysis')?.addEventListener('click',()=>{toast('已使用当前确认数据重新生成研判结果');document.querySelector('#knowledgeAnalysis')?.classList.add('flash');setTimeout(()=>document.querySelector('#knowledgeAnalysis')?.classList.remove('flash'),650)});
 
 function particles(){const c=document.querySelector('#particles');if(!c)return;const ctx=c.getContext('2d');let w,h,points;function size(){w=c.width=innerWidth;h=c.height=innerHeight;points=Array.from({length:Math.min(70,Math.floor(w/22))},()=>({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.18,vy:(Math.random()-.5)*.18,r:Math.random()*1.3+.35}))}function frame(){ctx.clearRect(0,0,w,h);points.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>w)p.vx*=-1;if(p.y<0||p.y>h)p.vy*=-1;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle='rgba(112,170,255,.42)';ctx.fill()});requestAnimationFrame(frame)}size();frame();addEventListener('resize',size)}
-particles();renderAll();
+particles();renderAll();loadFrontendDatabase();

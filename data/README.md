@@ -117,3 +117,20 @@ python scripts\check_demo_database.py
 ```
 
 生成器只覆盖 `data/zhixue_demo.sqlite` 和对应汇总文件，不会修改前端页面。
+
+## 8. 前端与线上数据库
+
+公开网站采用两层数据结构：
+
+1. `zhixue_demo.sqlite` 保存完整的匿名教学明细，是离线分析和 Skill 调用的数据源。
+2. `web_snapshots.json` 是从完整库生成的脱敏前端读模型；部署时写入 Cloudflare D1，由 `/api/catalog`、`/api/dashboard` 和 `/api/health` 提供只读查询。
+
+公开端不发布题目答案、原始作答正文和内部文件内容。若在 GitHub Pages 等不支持 D1 的纯静态环境打开，页面会自动读取 `assets/demo-data.json`，保证数据展示与 D1 版本一致。
+
+数据库内容发生变化时，依次运行：
+
+```powershell
+python scripts\export_frontend_snapshots.py
+python scripts\build_d1_migration.py
+npm run build:demo
+```
