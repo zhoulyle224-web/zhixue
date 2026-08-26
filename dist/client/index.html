@@ -1,6 +1,9 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="智学双擎：从班级学情研判到学生个性化学习的双端智能工作台">
@@ -13,28 +16,28 @@
 <body>
   <canvas id="particles"></canvas><div class="orb one"></div><div class="orb two"></div>
   <nav class="topnav">
-    <a class="brand" href="index.html"><span class="logo">✦</span><span>智学双擎<small>LEARNING INTELLIGENCE LOOP</small></span></a>
-    <div class="navlinks"><a href="#workflow">业务闭环</a><a href="#roles">进入工作台</a><a href="#principles">产品原则</a></div>
+    <a class="brand" href="index.html"><span class="logo">🦀</span><span>智学双擎<small>LEARNING INTELLIGENCE LOOP</small></span></a>
+    <div class="navlinks"><a href="#workflow">业务闭环</a><a href="#roles">进入工作台</a><a href="#skills">Skill 系统</a><a href="#principles">产品原则</a></div>
     <a class="btn sm nav-login" href="login.html">登录工作台</a>
   </nav>
   <main class="home scenario-home">
     <div class="home-inner">
-      <span class="tag"><i class="pulse"></i> 校园学情研判与个性化学习智能体</span>
-      <h1><span class="gradient">看见班级差异</span><br>让每个学生学得更准</h1>
+      <span class="tag"><i class="pulse"></i> 校园学情研判与个性化学习智能助手</span>
+      <h1><span class="gradient">看见班级差异</span><br>让每个学生学得更好</h1>
       <p class="lead">教师按课程建立班级、导入匿名化学习数据并形成教学建议；学生进入对应课程完成答疑与分层任务，学习结果再反馈到教师端。</p>
       <div class="workflow-strip" id="workflow">
         <span class="flow-step"><b>01</b>班级建课</span><i>→</i><span class="flow-step"><b>02</b>数据导入</span><i>→</i><span class="flow-step"><b>03</b>学情分析</span><i>→</i><span class="flow-step"><b>04</b>教学调整</span><i>→</i><span class="flow-step"><b>05</b>个性化学习</span><i>→</i><span class="flow-step"><b>06</b>反馈复盘</span>
       </div>
       <div class="role-grid" id="roles">
         <a class="role-card teacher-role" style="--accent:#9a6eff" href="login.html?role=teacher">
-          <div class="role-top"><div class="role-icon">教</div><span class="role-kicker">教师工作台</span></div>
+          <div class="role-top"><div class="role-icon">📊</div><span class="role-kicker">教师工作台</span></div>
           <h2>按班研判，精准调整教学</h2>
           <p>建立课程与班级，导入成绩、作业、互动和知识点数据；检查异常后生成薄弱知识点、学生分层和教学建议。</p>
           <div class="role-features"><span>课程与班级</span><span>数据质检</span><span>班级画像</span><span>分层任务</span><span>报告导出</span></div>
           <div class="enter"><b>进入教师端</b><i>→</i></div>
         </a>
         <a class="role-card student-role" style="--accent:#43d8ff" href="login.html?role=student">
-          <div class="role-top"><div class="role-icon">学</div><span class="role-kicker">学生学习空间</span></div>
+          <div class="role-top"><div class="role-icon">🎓</div><span class="role-kicker">学生学习空间</span></div>
           <h2>基于课程，获得个性化支持</h2>
           <p>加入教师创建的课程，查看个人掌握画像和专属任务；答疑结果附带资料依据，完成情况持续反馈给教师。</p>
           <div class="role-features"><span>加入课程</span><span>个人画像</span><span>智能答疑</span><span>专属任务</span><span>学习反馈</span></div>
@@ -42,17 +45,21 @@
         </a>
       </div>
       <p class="home-note">当前版本使用匿名示例数据与浏览器本地记录；不会在前端保存学校信息、个人身份或接口密钥。</p>
+      <div class="skill-zone" id="skills">
+        <div class="section-heading"><span>Skill 系统</span><h2>基于 OpenClaw 引擎的轻量智能助手</h2><p id="skillStatus">正在检测已接入的 Skill</p></div>
+        <div class="grid three skill-grid" id="skillGrid"></div>
+      </div>
     </div>
   </main>
   <section class="value" id="principles"><div class="value-inner">
-    <div class="section-heading"><span>产品原则</span><h2>不是单点工具，而是一条可复盘的教学链路</h2></div>
+    <div class="section-heading"><span>产品原则</span><h2>不是单点工具，而是一条可复盘的教学链条</h2></div>
     <div class="grid three">
-      <article class="card panel"><span class="principle-no">01</span><b>先校验，再分析</b><p>空值、重复、格式错误和异常成绩必须显式提示，分析结论保留数据依据。</p></article>
+      <article class="card panel"><span class="principle-no">01</span><b>先校验，再分析</b><p>空缺、重复、格式错误和异常成绩必须显式提示，分析结论保留数据依据。</p></article>
       <article class="card panel"><span class="principle-no">02</span><b>教师确认后再发布</b><p>智能体提供建议，不替代教师决策；分层任务与教学调整均由教师确认。</p></article>
-      <article class="card panel"><span class="principle-no">03</span><b>学习结果回到教学端</b><p>学生问题、任务完成与自评结果回流，支持教师持续调整下一轮教学。</p></article>
+      <article class="card panel"><span class="principle-no">03</span><b>学习结果回到教学闭环</b><p>学生问题、任务完成与自评结果回流，支持教师持续调整下一轮教学。</p></article>
     </div>
   </div></section>
-  <footer class="footer">智学双擎 · 数据导入 → 学情分析 → 教学调整 → 个性化学习 → 反馈复盘</footer>
-  <div class="toast"></div><script src="assets/app.js"></script>
+  <footer class="footer">智学双擎 · 数据导入 · 学情分析 · 教学调整 · 个性化学习 · 反馈复盘</footer>
+  <div class="toast"></div><script src="assets/skills/course-ai-tutor.js"></script><script src="assets/skills/academic-performance-analyzer.js"></script><script src="assets/skills/classroom-interaction-generator.js"></script><script src="assets/skills/course-content-optimizer.js"></script><script src="assets/skills/teacher-answer-manager.js"></script><script src="assets/skills/skill-registry.js"></script><script src="assets/app.js"></script>
 </body>
 </html>

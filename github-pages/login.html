@@ -1,47 +1,52 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="智学双擎模拟登录：选择教师或学生身份进入对应工作台">
-  <title>登录工作台｜智学双擎</title><link rel="stylesheet" href="assets/style.css">
+  <title>登录工作台｜智学双擎</title>
+  <link rel="stylesheet" href="assets/style.css">
 </head>
 <body data-page="login" class="login-page">
   <canvas id="particles"></canvas><div class="orb one"></div><div class="orb two"></div>
-  <nav class="topnav login-nav"><a class="brand" href="index.html"><span class="logo">✦</span><span>智学双擎<small>LEARNING INTELLIGENCE LOOP</small></span></a><a class="back-home" href="index.html">← 返回平台首页</a></nav>
+  <nav class="topnav login-nav"><a class="brand" href="index.html"><span class="logo">🦀</span><span>智学双擎<small>LEARNING INTELLIGENCE LOOP</small></span></a><a class="back-home" href="index.html">← 返回平台首页</a></nav>
   <main class="login-shell">
     <section class="login-story">
       <span class="tag"><i class="pulse"></i> 模拟身份登录</span>
-      <h1>同一条学习链路<br><span class="gradient">两种专属工作台</span></h1>
+      <h1>同一条学习链<br><span class="gradient">两种专属工作台</span></h1>
       <p>教师围绕课程和班级研判学情，学生围绕个人画像完成个性化学习。选择身份后进入对应空间。</p>
       <div class="login-flow">
         <div><b>教师端</b><span>建课分班 · 数据质检 · 学情分析 · 任务发布</span></div>
-        <i>⇄</i>
+        <i>→</i>
         <div><b>学生端</b><span>加入课程 · 个人画像 · 有据答疑 · 学习反馈</span></div>
       </div>
-      <div class="demo-safe"><span>◎</span><p><b>这是前端模拟登录</b><small>账号信息仅用于演示页面跳转，不连接真实用户系统，也不会上传密码。</small></p></div>
+      <div class="demo-safe"><span>🛡️</span><p><b>这是前端模拟登录</b><small>账号信息仅用于演示页面跳转，不连接真实用户系统，也不会上传密码。</small></p></div>
     </section>
     <section class="login-card card">
-      <div class="login-heading"><span class="login-mark">✦</span><div><h2>登录智学双擎</h2><p>请选择你的使用身份</p></div></div>
+      <div class="login-heading"><span class="login-mark">🦀</span><div><h2>登录智学双擎</h2><p>请选择你的使用身份</p></div></div>
       <div class="role-tabs" role="tablist" aria-label="登录身份">
-        <button class="role-tab on" data-login-role="teacher" role="tab"><span>教</span><div><b>教师</b><small>进入学情工作台</small></div></button>
-        <button class="role-tab" data-login-role="student" role="tab"><span>学</span><div><b>学生</b><small>进入学习空间</small></div></button>
+        <button class="role-tab on" data-login-role="teacher" role="tab"><span>📊</span><div><b>教师</b><small>进入学情工作台</small></div></button>
+        <button class="role-tab" data-login-role="student" role="tab"><span>🎓</span><div><b>学生</b><small>进入学习空间</small></div></button>
       </div>
       <form id="loginForm" novalidate>
-        <label class="login-field"><span>演示账号</span><div><i>◇</i><input id="loginAccount" autocomplete="username" placeholder="请输入演示账号"></div></label>
-        <label class="login-field"><span>演示密码</span><div><i>○</i><input id="loginPassword" type="password" autocomplete="current-password" placeholder="请输入演示密码"><button type="button" id="togglePassword" aria-label="显示或隐藏密码">显示</button></div></label>
+        <label class="login-field"><span>演示账号</span><div><i>👤</i><input id="loginAccount" autocomplete="username" placeholder="请输入演示账号"></div></label>
+        <label class="login-field"><span>演示密码</span><div><i>🔑</i><input id="loginPassword" type="password" autocomplete="current-password" placeholder="请输入演示密码"><button type="button" id="togglePassword" aria-label="显示或隐藏密码">显示</button></div></label>
         <div class="login-options"><label><input id="rememberLogin" type="checkbox" checked> 在当前设备保持登录</label><button type="button" id="fillDemo">填入演示账号</button></div>
         <div class="login-error" id="loginError" role="alert"></div>
         <button class="btn primary login-submit" type="submit"><span>登录并进入教师端</span><i>→</i></button>
       </form>
       <div class="demo-accounts expanded">
         <div class="demo-title"><span>可用演示账号</span><small>点击账号可直接填入</small></div>
-        <button type="button" data-demo-account="teacher"><i>教</i><span><b>教师账号</b><code>teacher2026　/　demo123</code><small>可进入教师端，也可切换学生视角</small></span></button>
-        <button type="button" data-demo-account="student"><i>学</i><span><b>学生账号</b><code>student2026　/　demo123</code><small>仅允许进入学生端</small></span></button>
+        <button type="button" data-demo-account="teacher"><i>📊</i><span><b>教师账号</b><code>teacher2026 / demo123</code><small>可进入教师端，也可切换学生视角</small></span></button>
+        <button type="button" data-demo-account="student"><i>🎓</i><span><b>学生账号</b><code>student2026 / demo123</code><small>仅允许进入学生端</small></span></button>
         <p id="demoCredential" hidden></p>
       </div>
       <p class="login-note">继续登录即表示你了解：本页面只模拟产品流程，不提供真实身份认证或数据安全保护。</p>
     </section>
   </main>
-  <div class="toast"></div><script src="assets/app.js"></script>
+  <div class="toast"></div><script src="assets/skills/course-ai-tutor.js"></script><script src="assets/skills/academic-performance-analyzer.js"></script><script src="assets/skills/classroom-interaction-generator.js"></script><script src="assets/skills/course-content-optimizer.js"></script><script src="assets/skills/teacher-answer-manager.js"></script><script src="assets/skills/skill-registry.js"></script><script src="assets/app.js"></script>
 </body>
 </html>
