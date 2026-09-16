@@ -1,5 +1,7 @@
 # vinext-starter
 
+> 本项目的后续开发须先阅读 [Agent 工作约束](./智学双擎_下一阶段模块拆分与Agent工作约束_20260916.md)；编码 Agent 另见 [AGENTS.md](./AGENTS.md)。每次操作前重新核对工作约束。
+
 A clean full-stack starter running on
 [vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
 Drizzle support.
