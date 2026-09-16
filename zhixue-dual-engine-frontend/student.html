@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="智学双擎学生端：加入课程、查看个人学情、获得有依据的答疑与个性化任务">
+  <title>学生个性化学习空间｜智学双擎</title><link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="student"><canvas id="particles"></canvas><div class="orb one"></div><div class="orb two"></div>
+<nav class="topnav fixed"><a class="brand" href="index.html"><span class="logo">✦</span><span>智学双擎<small>PERSONAL LEARNING SPACE</small></span></a><div class="navlinks"><a href="index.html">平台首页</a><button class="role-switch-btn" id="roleSwitchBtn" data-switch-role="teacher">返回教师端</button></div><div class="user-actions"><span class="user-chip"><i>学</i><b id="userIdentity">演示学生</b></span><button class="logout-btn" id="logoutBtn">退出</button></div></nav>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="profile"><span class="avatar">学</span><div><b>学生学习空间</b><small>按课程查看学习支持</small></div></div>
+    <div class="side-label">我的学习</div>
+    <button class="menu on" data-view="studentHome"><span>⌂</span>学习首页</button>
+    <button class="menu" data-view="courses"><span>▤</span>我的课程</button>
+    <button class="menu" data-view="portrait"><span>◎</span>个人学情画像</button>
+    <button class="menu" data-view="assistant"><span>✦</span>课程智能答疑</button>
+    <button class="menu" data-view="studentTasks"><span>✓</span>个性化任务 <span class="count" id="taskBadge">3</span></button>
+    <div class="side-label">反馈复盘</div>
+    <button class="menu" data-view="history"><span>↻</span>学习记录</button>
+    <div class="side-bottom"><div class="mode-pill">答疑结论会显示课程资料依据；学习画像来自脱敏数据库记录。</div></div>
+  </aside>
+  <main class="content">
+    <header class="page-head workspace-head">
+      <div><div class="crumb">学生端 / <span id="crumbName">学习首页</span></div><h1 class="page-title">学习首页</h1><p class="page-desc">查看当前课程、个人薄弱点和待完成任务。</p></div>
+      <div class="context-switch student-switch"><span class="database-status loading" id="databaseStatus"><i></i>数据库连接中</span><label>当前课程</label><select id="studentCourseSelect" aria-label="当前课程"></select></div>
+    </header>
+
+    <section class="view on" id="studentHome">
+      <article class="card student-welcome"><div><span class="eyebrow">今日学习建议</span><h2>先补齐“模型评估”，再完成迁移练习</h2><p>你的主要薄弱点集中在精确率、召回率与混淆矩阵。完成本组任务后，掌握度预计可提升 8%–12%。</p><div class="welcome-actions"><button class="btn light" onclick="openView('studentTasks')">开始今日任务</button><button class="btn ghost" onclick="openView('assistant')">向课程助手提问</button></div></div><div class="goal-ring"><b id="studentProgress">33%</b><span>本轮任务</span></div></article>
+      <div class="grid four metric-grid"><article class="card metric"><small>当前学习层次</small><b class="text-lg" id="studentTier">巩固组</b><span>由数据与教师确认</span></article><article class="card metric"><small>综合掌握度</small><b id="studentMastery">64%</b><span class="trend-up">最近一次快照</span></article><article class="card metric"><small>待完成任务</small><b id="studentPendingTasks">2</b><span>本周截止</span></article><article class="card metric"><small>当前课程成绩</small><b id="studentScore">--</b><span>综合成绩</span></article></div>
+      <div class="grid student-dashboard"><article class="card panel"><div class="card-head"><div><h3>知识点掌握</h3><small>基于作业、测验与近期学习表现</small></div><button class="link-btn" onclick="openView('portrait')">查看画像 →</button></div><div id="studentMasteryPreview" class="mastery-list"></div></article><article class="card panel"><div class="card-head"><h3>专属学习路径</h3><small>按推荐顺序完成</small></div><div class="path-list"><button onclick="openView('studentTasks')"><i class="done">1</i><span><b>概念微课</b><small>评价指标基础 · 已完成</small></span></button><button onclick="openView('studentTasks')"><i class="active">2</i><span><b>基础练习</b><small>混淆矩阵 · 进行中</small></span></button><button onclick="openView('assistant')"><i>3</i><span><b>问题澄清</b><small>提交仍不理解的一点</small></span></button><button onclick="openView('studentTasks')"><i>4</i><span><b>迁移验证</b><small>新情境应用题</small></span></button></div></article></div>
+    </section>
+
+    <section class="view" id="courses">
+      <div class="section-title"><div><h2>我的课程</h2><p>通过教师提供的邀请码加入课程；每门课程拥有独立的画像、答疑和任务。</p></div><button class="btn primary" id="showJoinCourse">＋ 加入课程</button></div>
+      <div class="join-course card panel" id="joinCoursePanel"><div class="form-row"><input class="field" id="joinCode" placeholder="输入课程邀请码，例如：AI2026"><button class="btn primary" id="joinCourse">加入课程</button></div><p>邀请码只用于找到课程，不包含个人身份信息。</p></div>
+      <div id="studentCourseGrid" class="course-grid student-courses"></div>
+    </section>
+
+    <section class="view" id="portrait">
+      <div class="section-title"><div><h2>个人学情画像</h2><p>画像显示你在当前课程中的掌握情况、证据来源与下一步建议。</p></div><span class="evidence-pill">最近更新：今天 14:30</span></div>
+      <div class="grid portrait-grid">
+        <article class="card panel portrait-main"><div class="card-head"><div><h3>知识点掌握图谱</h3><small>测验 40% · 作业 35% · 任务 15% · 互动 10%</small></div></div><div id="studentMasteryFull" class="mastery-list large"></div></article>
+        <article class="card panel"><div class="card-head"><h3>学习诊断</h3><span class="ai-label">✦ 有据分析</span></div><div class="diagnosis"><div class="diagnosis-item danger"><b>优先补强</b><strong>模型评估 · 48%</strong><p>两次练习在精确率与召回率选择上出现混淆。</p></div><div class="diagnosis-item"><b>保持练习</b><strong>机器学习流程 · 67%</strong><p>训练集与验证集的作用理解较好，迁移应用仍需练习。</p></div><div class="diagnosis-item success"><b>优势知识点</b><strong>人工智能基础 · 86%</strong><p>概念判断与案例识别表现稳定。</p></div></div></article>
+      </div>
+      <article class="card panel evidence-panel"><div class="card-head"><h3>画像依据</h3><small>你可以查看结论来自哪里</small></div><div class="evidence-grid"><div><span>最近测验</span><b>72 / 100</b><small>模型评估题失分 14 分</small></div><div><span>作业完成</span><b>8 / 9</b><small>平均正确率 74%</small></div><div><span>课堂互动</span><b>6 次</b><small>有效回答 4 次</small></div><div><span>专属任务</span><b>1 / 3</b><small>本轮仍有 2 项待办</small></div></div></article>
+    </section>
+
+    <section class="view" id="assistant">
+      <div class="section-title"><div><h2>课程智能答疑</h2><p>回答仅依据当前课程资料，并明确显示引用来源；不确定时会提示你向教师确认。</p></div><span class="source-status">● 已载入 12 份课程资料</span></div>
+      <div class="chat-layout">
+        <article class="card chat-panel"><div id="chatMessages" class="chat-messages"><div class="chat ai"><span>AI</span><div><b>课程学习助手</b><p>你好！我会基于《人工智能导论》的课程资料回答。你可以询问概念、解题思路或错题原因。</p></div></div></div><div class="quick-questions"><button data-question="为什么类别不平衡时不能只看准确率？">为什么不能只看准确率？</button><button data-question="精确率和召回率应该怎么选择？">精确率和召回率怎么选？</button><button data-question="请用例子解释混淆矩阵。">举例解释混淆矩阵</button></div><div class="chat-input"><textarea id="askInput" placeholder="输入你的课程问题，按 Ctrl + Enter 发送"></textarea><button class="btn primary" id="sendQuestion">发送问题</button></div></article>
+        <aside class="card panel source-panel"><div class="card-head"><h3>本次可用资料</h3><small>回答会标注引用</small></div><div class="source-list"><button><span>讲义</span><b>第 4 章 · 模型评估</b><small>第 18–26 页</small></button><button><span>课件</span><b>混淆矩阵与评价指标</b><small>第 12–19 页</small></button><button><span>例题</span><b>分类模型评估案例</b><small>例题 4-2</small></button></div><div class="source-tip">若课程资料无法支持结论，助手会明确说明“资料不足”，不会编造答案。</div></aside>
+      </div>
+    </section>
+
+    <section class="view" id="studentTasks">
+      <div class="section-title"><div><h2>个性化任务</h2><p>教师根据班级研判确认并发布；你看到的是当前“巩固组”专属任务。</p></div><span class="tier-badge">当前：巩固组</span></div>
+      <div class="task-overview card"><div><b>本轮复习目标</b><p>理解评价指标的含义，并能根据真实情境选择合适指标。</p></div><div class="task-progress"><span><b id="taskDoneCount">1</b> / 3 已完成</span><div class="progress"><i id="studentTaskBar" style="width:33%"></i></div></div></div>
+      <div id="personalTaskList" class="personal-task-list"></div>
+    </section>
+
+    <section class="view" id="history">
+      <div class="section-title"><div><h2>学习记录与反馈</h2><p>查看任务、答疑和掌握度变化；这些结果会以汇总形式反馈给教师。</p></div><button class="btn" id="exportStudentData">导出我的学习记录</button></div>
+      <div class="grid history-grid"><article class="card panel"><div class="card-head"><h3>最近学习动态</h3><small>当前课程</small></div><div id="learningTimeline" class="timeline"></div></article><article class="card panel"><div class="card-head"><h3>本轮变化</h3><small>与上次研判对比</small></div><div class="change-list"><div><span>综合掌握度</span><b class="trend-up">+5%</b></div><div><span>模型评估</span><b class="trend-up">+9%</b></div><div><span>作业完成率</span><b class="trend-up">+11%</b></div><div><span>仍待解决问题</span><b class="warning-text">1 个</b></div></div><div class="evidence-note"><b>给教师的反馈</b> 你完成任务后，系统只反馈课程学习结果，不显示与学习无关的个人信息。</div></article></div>
+    </section>
+  </main>
+</div>
+<div class="toast"></div>
+<script src="assets/skills/course-ai-tutor.js"></script>
+<script src="assets/skills/academic-performance-analyzer.js"></script>
+<script src="assets/skills/classroom-interaction-generator.js"></script>
+<script src="assets/skills/course-content-optimizer.js"></script>
+<script src="assets/skills/teacher-answer-manager.js"></script>
+<script src="assets/skills/skill-registry.js"></script>
+<script src="assets/app.js"></script>
+</body></html>
