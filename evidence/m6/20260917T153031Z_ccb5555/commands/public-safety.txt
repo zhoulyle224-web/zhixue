@@ -1,0 +1,5 @@
+command: D:/node.exe scripts/check-public-safety.mjs
+exitCode: 0
+durationMs: 168
+
+[M6] 公开安全检查通过：29 个文件，Worker 正式导出 fail closed

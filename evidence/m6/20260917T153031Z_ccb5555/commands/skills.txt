@@ -1,0 +1,32 @@
+command: D:/node.exe scripts/verify-skills.cjs
+exitCode: 0
+durationMs: 177
+
+PASS  tutor.已解答
+PASS  tutor.有依据
+PASS  tutor.有引导追问
+PASS  tutor.输出含核心知识点
+PASS  tutor.待人工处理
+PASS  analyzer.整体
+PASS  analyzer.知识点
+PASS  analyzer.分层
+PASS  analyzer.建议
+PASS  analyzer.最薄弱点被点名
+PASS  analyzer.澄清
+PASS  interaction.方案
+PASS  interaction.游戏
+PASS  optimizer.内容调整
+PASS  optimizer.最薄弱优先排序
+PASS  optimizer.章节调整
+PASS  optimizer.案例与考核
+PASS  optimizer.落地计划
+PASS  optimizer.澄清
+PASS  answer.聚合高频
+PASS  answer.统一解答
+PASS  answer.FAQ
+PASS  answer.重点辅导名单
+PASS  answer.总结
+PASS  answer.澄清
+PASS  registry.5skill
+
+26/26 passed
