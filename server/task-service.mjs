@@ -485,8 +485,23 @@ export function createTaskService({ baseDb, runtimeStore, audit = async () => {}
       note: "上一轮任务反馈，仅作为辅助证据，不参与本次分数计算" };
   }
 
+  function versionScope(versionId) {
+    return db.prepare(`SELECT p.context_key AS context,p.offering_id AS offeringId,p.class_id AS classId
+      FROM runtime_task_versions v JOIN runtime_task_plans p ON p.id=v.plan_id
+      WHERE v.id=?`).get(versionId) || null;
+  }
+
+  function assignmentScope(assignmentId) {
+    return db.prepare(`SELECT p.context_key AS context,p.offering_id AS offeringId,p.class_id AS classId,
+      a.student_id AS studentId,a.student_no AS studentNo
+      FROM runtime_task_assignments a
+      JOIN runtime_task_versions v ON v.id=a.task_version_id
+      JOIN runtime_task_plans p ON p.id=v.plan_id
+      WHERE a.id=?`).get(assignmentId) || null;
+  }
+
   return { createDraft, updateDraft, publish, revise, revoke, studentTasks, complete,
-    feedback, teacherTasks, feedbackSummary, getVersion };
+    feedback, teacherTasks, feedbackSummary, getVersion, versionScope, assignmentScope };
 }
 
 export { TIERS };

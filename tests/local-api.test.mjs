@@ -2,15 +2,22 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { createZhixueServer } from "../server/local-api.mjs";
+import { createAuthenticatedFetch } from "./auth-test-helper.mjs";
+
+let activeFetch = globalThis.fetch;
+const fetch = (...args) => activeFetch(...args);
 
 async function withServer(run) {
   const server = createZhixueServer({ runtimeDbPath: ":memory:" });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const address = server.address();
   const baseUrl = `http://127.0.0.1:${address.port}`;
+  const previousFetch = activeFetch;
+  activeFetch = createAuthenticatedFetch(baseUrl);
   try {
     await run(baseUrl);
   } finally {
+    activeFetch = previousFetch;
     await new Promise((resolve) => server.close(resolve));
   }
 }
@@ -22,7 +29,7 @@ test("本地健康检查不依赖外网", async () => {
     const payload = await response.json();
     assert.equal(payload.success, true);
     assert.equal(payload.mode, "local");
-    assert.equal(payload.studentCount, 180);
+    assert.equal(payload.services.sqlite, "ready");
     assert.equal(payload.services.network, "not_required");
   });
 });
@@ -31,7 +38,7 @@ test("课程目录与班级看板可供教师端读取", async () => {
   await withServer(async (baseUrl) => {
     const catalog = await fetch(`${baseUrl}/api/catalog`).then((response) => response.json());
     assert.equal(catalog.success, true);
-    assert.ok(catalog.data.catalog.length >= 30);
+    assert.ok(catalog.data.catalog.length >= 1);
 
     const dashboard = await fetch(
       `${baseUrl}/api/dashboard?audience=teacher&context=teacher%3A7%3A1`,
@@ -84,35 +91,33 @@ test("提示注入被拦截，个人信息先脱敏", async () => {
 
 test("导出前执行权限校验、脱敏与水印标记", async () => {
   await withServer(async (baseUrl) => {
-    const forbidden = await fetch(
-      `${baseUrl}/api/export?role=student&context=teacher%3A7%3A1&kind=report&format=json`,
-    );
+    const forbidden = await fetch(`${baseUrl}/api/export`, { method: "POST",
+      headers: { "content-type": "application/json", "x-test-role": "student" },
+      body: JSON.stringify({ kind: "report", format: "json", scope: { context: "teacher:7:1" } }) });
     assert.equal(forbidden.status, 403);
 
-    const response = await fetch(
-      `${baseUrl}/api/export?role=teacher&context=teacher%3A7%3A1&kind=report&format=json`,
-    );
+    const response = await fetch(`${baseUrl}/api/export`, { method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ kind: "questions", format: "json", scope: { context: "teacher:7:1" } }) });
     assert.equal(response.status, 200);
-    assert.match(response.headers.get("x-zhixue-watermark"), /^zhixue-teacher-/);
+    assert.match(response.headers.get("x-zhixue-watermark"), /^ZX-\d{8}-[A-F0-9]{8}$/);
     const payload = await response.json();
-    assert.equal(payload.success, true);
-    assert.equal(payload.data.exportMeta.redacted, true);
-    assert.equal(payload.data.teacherDashboard.class_name, "[已脱敏]");
+    assert.equal(payload.exportMeta.redacted, true);
+    assert.deepEqual(payload.questions, []);
+    assert.equal(payload.scope.classRef, "班级-1");
   });
 });
 
 test("CSV 与 Excel 兼容导出可用", async () => {
   await withServer(async (baseUrl) => {
-    const csv = await fetch(
-      `${baseUrl}/api/export?role=teacher&context=teacher%3A7%3A1&kind=report&format=csv`,
-    );
+    const csv = await fetch(`${baseUrl}/api/export`, { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ kind: "questions", format: "csv", scope: { context: "teacher:7:1" } }) });
     assert.equal(csv.status, 200);
     assert.match(csv.headers.get("content-type"), /text\/csv/);
     assert.match(await csv.text(), /字段,值/);
 
-    const excel = await fetch(
-      `${baseUrl}/api/export?role=teacher&context=teacher%3A7%3A1&kind=report&format=excel`,
-    );
+    const excel = await fetch(`${baseUrl}/api/export`, { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ kind: "questions", format: "excel", scope: { context: "teacher:7:1" } }) });
     assert.equal(excel.status, 200);
     assert.match(excel.headers.get("content-type"), /ms-excel/);
     assert.match(await excel.text(), /<Workbook/);

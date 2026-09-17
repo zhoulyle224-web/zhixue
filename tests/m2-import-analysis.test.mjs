@@ -7,17 +7,22 @@ import { fileURLToPath } from "node:url";
 import { DatabaseSync } from "node:sqlite";
 import { createHash } from "node:crypto";
 import { createZhixueServer } from "../server/local-api.mjs";
+import { createAuthenticatedFetch } from "./auth-test-helper.mjs";
+
+let activeFetch = globalThis.fetch;
+const fetch = (...args) => activeFetch(...args);
 
 const FIXTURES = fileURLToPath(new URL("./fixtures/m2/", import.meta.url));
 const A = "teacher:7:1";
-const B = "teacher:7:2";
+const B = "teacher:7:5";
 
 async function withServer(path, run) {
   const server = createZhixueServer({ runtimeDbPath: path });
   await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
   const base = `http://127.0.0.1:${server.address().port}`;
+  const previousFetch=activeFetch; activeFetch=createAuthenticatedFetch(base);
   try { return await run(base); }
-  finally { await new Promise((ok) => server.close(ok)); }
+  finally { activeFetch=previousFetch; await new Promise((ok) => server.close(ok)); }
 }
 
 async function post(base, url, body) {

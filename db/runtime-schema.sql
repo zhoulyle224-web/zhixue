@@ -1,5 +1,49 @@
 PRAGMA foreign_keys = ON;
 
+CREATE TABLE IF NOT EXISTS runtime_schema_meta (
+  version INTEGER PRIMARY KEY,
+  applied_at TEXT NOT NULL
+);
+
+INSERT OR IGNORE INTO runtime_schema_meta(version, applied_at)
+VALUES (4, CURRENT_TIMESTAMP);
+
+INSERT OR IGNORE INTO runtime_schema_meta(version, applied_at)
+VALUES (5, CURRENT_TIMESTAMP);
+
+CREATE TABLE IF NOT EXISTS runtime_auth_accounts (
+  id TEXT PRIMARY KEY,
+  account_name TEXT NOT NULL UNIQUE,
+  role TEXT NOT NULL CHECK (role IN ('teacher','student')),
+  actor_ref_id INTEGER NOT NULL,
+  actor_ref_code TEXT NOT NULL,
+  password_algo TEXT NOT NULL,
+  password_salt TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  disabled INTEGER NOT NULL DEFAULT 0 CHECK (disabled IN (0,1)),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS runtime_auth_sessions (
+  id TEXT PRIMARY KEY,
+  account_id TEXT NOT NULL REFERENCES runtime_auth_accounts(id),
+  session_token_hash TEXT NOT NULL UNIQUE,
+  csrf_token_hash TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  last_seen_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  revoked_at TEXT,
+  remember_login INTEGER NOT NULL DEFAULT 0 CHECK (remember_login IN (0,1)),
+  user_agent_hash TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_runtime_auth_sessions_account
+  ON runtime_auth_sessions(account_id, expires_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_runtime_auth_sessions_active
+  ON runtime_auth_sessions(session_token_hash, revoked_at, expires_at);
+
 CREATE TABLE IF NOT EXISTS runtime_import_batches (
   id TEXT PRIMARY KEY,
   context_key TEXT NOT NULL,
@@ -195,3 +239,31 @@ CREATE TABLE IF NOT EXISTS runtime_task_events (
 
 CREATE INDEX IF NOT EXISTS idx_runtime_task_events_version
   ON runtime_task_events(task_version_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS runtime_export_audits (
+  id TEXT PRIMARY KEY,
+  export_id TEXT UNIQUE,
+  account_id TEXT,
+  actor_role TEXT NOT NULL CHECK (actor_role IN ('teacher','student','unknown')),
+  actor_ref_code TEXT,
+  scope_type TEXT NOT NULL,
+  scope_ref TEXT NOT NULL,
+  export_kind TEXT NOT NULL,
+  export_format TEXT NOT NULL,
+  watermark_id TEXT UNIQUE,
+  policy_version TEXT NOT NULL,
+  source_refs_json TEXT NOT NULL DEFAULT '{}',
+  record_count INTEGER NOT NULL DEFAULT 0,
+  content_size_bytes INTEGER,
+  content_digest TEXT,
+  result TEXT NOT NULL CHECK (result IN ('generated','denied','failed')),
+  failure_code TEXT,
+  generated_at TEXT,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_runtime_export_audits_account
+  ON runtime_export_audits(account_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_runtime_export_audits_scope
+  ON runtime_export_audits(scope_ref, created_at DESC);

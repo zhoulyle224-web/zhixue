@@ -12,7 +12,7 @@
   function defaultDue(){return localDate(Date.now()+7*86400000)}
   async function api(path,options){
     let response;
-    try{response=await fetch(path,{...options,headers:{accept:'application/json',...(options?.headers||{})}})}
+    try{response=await window.ZhixueApi.apiFetch(path,options)}
     catch{const error=new Error('本地任务服务不可用。真实发布与完成操作已停用。');error.offline=true;throw error}
     let payload;
     try{payload=await response.json()}catch{const error=new Error('当前部署不提供任务写接口；这里只能查看历史合成快照。');error.offline=true;throw error}

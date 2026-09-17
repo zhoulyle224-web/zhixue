@@ -315,6 +315,27 @@ export function createRuntimeStore(dbPath = DEFAULT_RUNTIME_DB) {
     return getQa(questionId);
   }
 
+  function writeExportAudit(row) {
+    db.prepare(`INSERT INTO runtime_export_audits
+      (id,export_id,account_id,actor_role,actor_ref_code,scope_type,scope_ref,
+       export_kind,export_format,watermark_id,policy_version,source_refs_json,
+       record_count,content_size_bytes,content_digest,result,failure_code,
+       generated_at,created_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+      row.id, row.exportId ?? null, row.accountId ?? null, row.actorRole || "unknown",
+      row.actorRefCode ?? null, row.scopeType, row.scopeRef, row.exportKind,
+      row.exportFormat, row.watermarkId ?? null, row.policyVersion,
+      JSON.stringify(row.sourceRefs || {}), Number(row.recordCount || 0),
+      row.contentSizeBytes ?? null, row.contentDigest ?? null, row.result,
+      row.failureCode ?? null, row.generatedAt ?? null, row.createdAt,
+    );
+    return getExportAudit(row.exportId);
+  }
+
+  function getExportAudit(exportId) {
+    return db.prepare("SELECT * FROM runtime_export_audits WHERE export_id=?").get(exportId) || null;
+  }
+
   return {
     writeBatch,
     getBatch,
@@ -331,6 +352,8 @@ export function createRuntimeStore(dbPath = DEFAULT_RUNTIME_DB) {
     getStudentQa,
     getTeacherQa,
     replyQa,
+    writeExportAudit,
+    getExportAudit,
     // Internal server services share this connection so multi-table M3 writes
     // can be committed in one SQLite transaction. It is never exposed by HTTP.
     taskDatabase: db,

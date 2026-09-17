@@ -9,25 +9,21 @@ const json = (data, status = 200) => new Response(JSON.stringify(data), {
 
 async function handleApi(request, env) {
   const url = new URL(request.url);
+  if (url.pathname === "/api/auth/login") {
+    return json({ success: false, code: "AUTH_NOT_AVAILABLE_IN_PUBLIC_DEMO", message: "公开展示版未启用身份与写入服务，请使用本地 Node 版体验完整闭环。" }, 501);
+  }
+  if (url.pathname === "/api/export") {
+    return json({ success: false, code: "EXPORT_NOT_AVAILABLE_IN_PUBLIC_DEMO", message: "公开展示版未启用受保护数据导出，请使用本地 Node 版。" }, 501);
+  }
+  if (["/api/auth/me", "/api/auth/logout", "/api/catalog", "/api/dashboard"].includes(url.pathname)) {
+    return json({ success: false, code: "AUTH_NOT_AVAILABLE_IN_PUBLIC_DEMO", message: "公开展示版未开放受保护业务数据。" }, 501);
+  }
   if (request.method !== "GET") return json({ success: false, error: "method_not_allowed" }, 405);
   try {
     if (url.pathname === "/api/health") {
       const snapshotCount = await env.DB.prepare("SELECT COUNT(*) AS count FROM dashboard_snapshots").first();
       const counters = await env.DB.prepare("SELECT SUM(row_count) AS count, COUNT(*) AS tables FROM dataset_counters").first();
       return json({ success: true, database: "D1", mode: "synthetic_read_model", snapshots: snapshotCount?.count ?? 0, sourceRecords: counters?.count ?? 0, sourceTables: counters?.tables ?? 0 });
-    }
-    if (url.pathname === "/api/catalog") {
-      const row = await env.DB.prepare("SELECT payload_json, source_version, updated_at FROM dashboard_snapshots WHERE context_key = ? LIMIT 1").bind("catalog").first();
-      if (!row) return json({ success: false, error: "catalog_not_found" }, 404);
-      return json({ success: true, source: "database", sourceVersion: row.source_version, updatedAt: row.updated_at, data: JSON.parse(row.payload_json) });
-    }
-    if (url.pathname === "/api/dashboard") {
-      const audience = url.searchParams.get("audience"), context = url.searchParams.get("context");
-      if (!audience || !context || !["teacher", "student"].includes(audience)) return json({ success: false, error: "invalid_query" }, 400);
-      if (!context.startsWith(`${audience}:`) || context.length > 80) return json({ success: false, error: "invalid_context" }, 400);
-      const row = await env.DB.prepare("SELECT payload_json, source_version, updated_at FROM dashboard_snapshots WHERE audience = ? AND context_key = ? LIMIT 1").bind(audience, context).first();
-      if (!row) return json({ success: false, error: "dashboard_not_found" }, 404);
-      return json({ success: true, source: "database", sourceVersion: row.source_version, updatedAt: row.updated_at, data: JSON.parse(row.payload_json) });
     }
   } catch (error) {
     return json({ success: false, error: "database_unavailable", message: error instanceof Error ? error.message : "unknown" }, 503);

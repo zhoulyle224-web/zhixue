@@ -10,7 +10,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DB_PATH = ROOT / "data" / "zhixue_demo.sqlite"
-OUTPUTS = [ROOT / "data" / "web_snapshots.json", ROOT / "github-pages" / "assets" / "demo-data.json"]
+PRIVATE_OUTPUT = ROOT / "data" / "web_snapshots.json"
+PUBLIC_OUTPUT = ROOT / "assets" / "demo-data.json"
 SOURCE_VERSION = "2026-08-25-v1"
 COLORS = ["#46dfa1", "#43d8ff", "#617fff", "#ffb45e", "#ff8e7c"]
 
@@ -312,11 +313,26 @@ def main() -> None:
         "student": {student["contextKey"]: student},
     }
     db.close()
-    text = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
-    for output in OUTPUTS:
-        output.parent.mkdir(parents=True, exist_ok=True)
-        output.write_text(text, encoding="utf-8")
-        print(f"SNAPSHOT_OK: {output}")
+    PRIVATE_OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    PRIVATE_OUTPUT.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    print(f"SNAPSHOT_OK_PRIVATE: {PRIVATE_OUTPUT}")
+
+    # Public assets intentionally contain no actor context, class, counts, QA, tasks or runtime state.
+    public_payload = {
+        "meta": {
+            "sourceVersion": SOURCE_VERSION,
+            "generatedAt": payload["meta"]["generatedAt"],
+            "isSynthetic": True,
+            "scope": "public-course-list",
+        },
+        "courses": sorted(
+            {item["course_code"]: {"courseCode": item["course_code"], "courseName": item["course_name"]} for item in contexts}.values(),
+            key=lambda item: item["courseCode"],
+        ),
+    }
+    PUBLIC_OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    PUBLIC_OUTPUT.write_text(json.dumps(public_payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    print(f"SNAPSHOT_OK_PUBLIC: {PUBLIC_OUTPUT}")
 
 
 if __name__ == "__main__":

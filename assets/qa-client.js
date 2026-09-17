@@ -1,7 +1,7 @@
 /* M1 课程答疑界面：服务端是问答、待办和回复的唯一正式数据源。 */
 (function (global) {
   'use strict';
-  const STUDENT = 'student:S240101'; // M1 演示上下文；真实服务端身份认证属于 M4。
+  const STUDENT = 'student:S240101'; // 仅作请求一致性标记；真实身份由服务端 Session 决定。
   const $ = selector => document.querySelector(selector);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const time = value => value ? new Date(value).toLocaleString('zh-CN') : '—';
@@ -11,7 +11,7 @@
 
   async function api(path, options) {
     let response, payload;
-    try { response = await fetch(path, { ...options, headers: { accept:'application/json', ...(options?.headers || {}) } }); }
+    try { response = await global.ZhixueApi.apiFetch(path, options); }
     catch { const error = new Error('本地答疑服务不可用，请启动 Node 服务后重试。教师待办尚未同步。'); error.offline = true; throw error; }
     try { payload = await response.json(); }
     catch { const error = new Error('当前站点不提供正式答疑服务；请使用本地 Node 版。教师待办尚未同步。'); error.offline = true; throw error; }

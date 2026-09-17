@@ -5,16 +5,22 @@ import { join, resolve, sep } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 import { createZhixueServer } from "../server/local-api.mjs";
+import { createAuthenticatedFetch } from "./auth-test-helper.mjs";
+
+let activeFetch = globalThis.fetch;
+const fetch = (...args) => activeFetch(...args);
 
 const A = "teacher:7:1";
-const B = "teacher:7:2";
+const B = "teacher:7:5";
 const fixtures = new URL("./fixtures/m2/", import.meta.url);
 
 async function withServer(dbPath, work) {
   const server = createZhixueServer({ runtimeDbPath: dbPath });
   await new Promise((done) => server.listen(0, "127.0.0.1", done));
-  try { return await work(`http://127.0.0.1:${server.address().port}`); }
-  finally { await new Promise((done) => server.close(done)); }
+  const base=`http://127.0.0.1:${server.address().port}`, previousFetch=activeFetch;
+  activeFetch=createAuthenticatedFetch(base);
+  try { return await work(base); }
+  finally { activeFetch=previousFetch; await new Promise((done) => server.close(done)); }
 }
 async function post(base, path, body) {
   const response = await fetch(base + path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });

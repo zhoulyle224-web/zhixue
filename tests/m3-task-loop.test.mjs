@@ -6,6 +6,10 @@ import { join, resolve, sep } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 import { createZhixueServer } from "../server/local-api.mjs";
+import { createAuthenticatedFetch } from "./auth-test-helper.mjs";
+
+let activeFetch = globalThis.fetch;
+const fetch = (...args) => activeFetch(...args);
 
 const CONTEXT = "teacher:7:1";
 const STUDENT = "student:S240101";
@@ -16,8 +20,10 @@ const BASELINE = new URL("../data/zhixue_demo.sqlite", import.meta.url);
 async function withServer(dbPath, work) {
   const server = createZhixueServer({ runtimeDbPath: dbPath });
   await new Promise((done) => server.listen(0, "127.0.0.1", done));
-  try { return await work(`http://127.0.0.1:${server.address().port}`); }
-  finally { await new Promise((done) => server.close(done)); }
+  const base=`http://127.0.0.1:${server.address().port}`, previousFetch=activeFetch;
+  activeFetch=createAuthenticatedFetch(base);
+  try { return await work(base); }
+  finally { activeFetch=previousFetch; await new Promise((done) => server.close(done)); }
 }
 async function request(base, path, method = "GET", body) {
   const response = await fetch(base + path, {
@@ -88,7 +94,7 @@ test("M3-T02/T03 动态草案为 3/5/2 且 analysis context 受限", async () =>
     assert.equal(created.body.data.coverage.classStudents, 30);
     const mismatch = await draft(base, run.analysisRunId, "teacher:1:1");
     assert.equal(mismatch.status, 403);
-    assert.equal(mismatch.body.code, "TASK_ANALYSIS_CONTEXT_MISMATCH");
+    assert.equal(mismatch.body.code, "AUTH_CONTEXT_FORBIDDEN");
   });
 });
 
@@ -365,7 +371,7 @@ test("M3-T22/T23/T24/T25 截止时间、PII、纯文本与后续研判反馈边�
     const run = await analysis(base);
     const created = await draft(base, run.analysisRunId);
     const tasks = structuredClone(created.body.data.tasks);
-    tasks.extension.detail = "<script>alert(1)</script> 仅作为纯文本";
+    tasks.extension.detail = tasks.improvement.detail = tasks.consolidation.detail = "<script>alert(1)</script> 仅作为纯文本";
     const invalid = await put(base, `/api/tasks/drafts/${created.body.data.versionId}`, {
       context: CONTEXT, dueAt: "2020-01-01", tasks,
     });
@@ -378,11 +384,11 @@ test("M3-T22/T23/T24/T25 截止时间、PII、纯文本与后续研判反馈边�
     await post(base, `/api/tasks/drafts/${created.body.data.versionId}/publish`, {
       context: CONTEXT, clientRequestId: "publish-security",
     });
-    const task = (await get(base, `/api/tasks/student?studentContext=${encodeURIComponent("student:S240106")}&offeringId=7`))
+    const task = (await get(base, `/api/tasks/student?studentContext=${encodeURIComponent("student:S240101")}&offeringId=7`))
       .body.data.activeAssignments[0];
     assert.equal(task.detail, "<script>alert(1)</script> 仅作为纯文本");
     await post(base, `/api/tasks/assignments/${task.assignmentId}/complete`, {
-      studentContext: "student:S240106", feedback: "手机 13812345678", clientRequestId: "security-complete",
+      studentContext: "student:S240101", feedback: "手机 13812345678", clientRequestId: "security-complete",
     });
     const summary = await get(base, `/api/tasks/feedback-summary?context=${encodeURIComponent(CONTEXT)}`);
     assert.equal(summary.status, 200);

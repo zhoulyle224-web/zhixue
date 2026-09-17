@@ -8,6 +8,15 @@ import { buildAnalysisInput, ImportError, SKILL_ID, SKILL_VERSION, validateImpor
 import { createRuntimeStore } from "./runtime-store.mjs";
 import { answerQa, getQaHistory, getQaInbox, getQaResources, QaError, replyQa } from "./qa-service.mjs";
 import { createTaskService, TaskError } from "./task-service.mjs";
+import { createAuthService, AuthError } from "./auth-service.mjs";
+import { createExportService, ExportError } from "./export-service.mjs";
+import {
+  authorizeStudentOffering,
+  authorizeStudentSelf,
+  authorizeTeacherContext,
+  requireRole,
+  scopedCatalog,
+} from "./authorization.mjs";
 
 const require = createRequire(import.meta.url);
 const { loadZhixueSkills } = require("./skill-runtime.cjs");
@@ -16,7 +25,8 @@ const ROOT = resolve(fileURLToPath(new URL(".", import.meta.url)), "..");
 const ASSETS_ROOT = resolve(ROOT, "assets");
 const DATA_ROOT = resolve(ROOT, "data");
 const DATABASE_PATH = resolve(DATA_ROOT, "zhixue_demo.sqlite");
-const READ_MODEL_PATH = resolve(ASSETS_ROOT, "demo-data.json");
+// Actor-level snapshots stay server-private; /assets/demo-data.json is public-safe only.
+const READ_MODEL_PATH = resolve(DATA_ROOT, "web_snapshots.json");
 const AUDIT_PATH = resolve(DATA_ROOT, "runtime", "audit.jsonl");
 const SKILL_ROOT = resolve(ASSETS_ROOT, "skills");
 
@@ -42,9 +52,6 @@ const MIME_TYPES = {
   ".txt": "text/plain; charset=utf-8",
 };
 
-const EXPORT_KINDS = new Set(["report", "questions", "review"]);
-const EXPORT_FORMATS = new Set(["json", "csv", "excel", "print"]);
-const SENSITIVE_KEY = /^(display_name|student_name|teacher_name|class_name|student_no|student_id|teacher_id|email|phone|mobile|id_card|gender|address)$/i;
 const PROMPT_INJECTION = [
   /忽略(以上|之前|全部).*(指令|规则)/i,
   /泄露.*(系统提示|密钥|密码)/i,
@@ -54,7 +61,6 @@ const PROMPT_INJECTION = [
 ];
 
 const skills = loadZhixueSkills(SKILL_ROOT);
-let database;
 let readModel;
 
 function json(data, status = 200, extraHeaders = {}) {
@@ -62,7 +68,7 @@ function json(data, status = 200, extraHeaders = {}) {
     status,
     headers: {
       "content-type": "application/json; charset=utf-8",
-      "cache-control": status === 200 ? "public, max-age=30" : "no-store",
+      "cache-control": "private, no-store",
       "x-content-type-options": "nosniff",
       ...extraHeaders,
     },
@@ -79,13 +85,6 @@ function text(body, status, contentType, extraHeaders = {}) {
       ...extraHeaders,
     },
   });
-}
-
-function openDatabase() {
-  if (!database) {
-    database = new DatabaseSync(DATABASE_PATH, { readOnly: true });
-  }
-  return database;
 }
 
 async function getReadModel() {
@@ -108,20 +107,6 @@ function redactText(value) {
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "邮箱已脱敏")
     .replace(/\b\d{17}[\dXx]\b/g, "证件号已脱敏")
     .replace(/\bS\d{6,}\b/gi, "匿名学生");
-}
-
-function redactValue(value, key = "") {
-  if (SENSITIVE_KEY.test(key)) return "[已脱敏]";
-  if (Array.isArray(value)) return value.map((item) => redactValue(item, key));
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value).map(([childKey, childValue]) => [
-        childKey,
-        redactValue(childValue, childKey),
-      ]),
-    );
-  }
-  return value;
 }
 
 function validateContext(audience, context) {
@@ -174,125 +159,6 @@ async function recordAudit(event) {
   }
 }
 
-function flattenRows(payload, prefix = "") {
-  const rows = [];
-  function visit(value, pathParts) {
-    if (Array.isArray(value)) {
-      value.forEach((item, index) => visit(item, [...pathParts, String(index + 1)]));
-      return;
-    }
-    if (value && typeof value === "object") {
-      Object.entries(value).forEach(([key, child]) => visit(child, [...pathParts, key]));
-      return;
-    }
-    rows.push({
-      path: prefix ? `${prefix}.${pathParts.join(".")}` : pathParts.join("."),
-      value: value === null || value === undefined ? "" : String(value),
-    });
-  }
-  visit(payload, []);
-  return rows;
-}
-
-function csvCell(value) {
-  const textValue = String(value ?? "");
-  return /[",\r\n]/.test(textValue)
-    ? `"${textValue.replaceAll('"', '""')}"`
-    : textValue;
-}
-
-function toCsv(payload) {
-  const rows = flattenRows(payload);
-  const lines = ["字段,值", ...rows.map((row) => `${csvCell(row.path)},${csvCell(row.value)}`)];
-  return `\uFEFF${lines.join("\r\n")}\r\n`;
-}
-
-function escapeXml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&apos;");
-}
-
-function toExcelXml(payload) {
-  const rows = flattenRows(payload);
-  const cells = rows
-    .map(
-      (row) =>
-        `<Row><Cell><Data ss:Type="String">${escapeXml(row.path)}</Data></Cell>` +
-        `<Cell><Data ss:Type="String">${escapeXml(row.value)}</Data></Cell></Row>`,
-    )
-    .join("");
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
- <Worksheet ss:Name="智学双擎导出"><Table>${cells}</Table></Worksheet>
-</Workbook>`;
-}
-
-function buildPrintHtml(title, payload) {
-  const rows = flattenRows(payload)
-    .map(
-      (row) =>
-        `<tr><th>${escapeXml(row.path)}</th><td>${escapeXml(row.value)}</td></tr>`,
-    )
-    .join("");
-  return `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>${escapeXml(
-    title,
-  )}</title><style>
-body{font-family:"Microsoft YaHei",sans-serif;padding:32px;color:#14213d}
-h1{font-size:22px}table{width:100%;border-collapse:collapse}th,td{padding:8px;border:1px solid #cbd5e1;text-align:left;vertical-align:top}
-th{width:32%;background:#f1f5f9}.watermark{position:fixed;inset:45% auto auto 10%;transform:rotate(-24deg);font-size:48px;color:rgba(37,99,235,.09);pointer-events:none}
-@media print{.no-print{display:none}}@media(max-width:700px){body{padding:16px}th{width:42%}}
-</style><body><button class="no-print" onclick="print()">打印或另存为 PDF</button><h1>${escapeXml(
-    title,
-  )}</h1><p>导出时间：${new Date().toLocaleString("zh-CN")}</p><table>${rows}</table><div class="watermark">智学双擎内部使用</div></body></html>`;
-}
-
-async function getExportPayload(kind, context) {
-  const model = await getReadModel();
-  if (context.startsWith("student:")) {
-    const student = model.student?.[context];
-    if (!student) return null;
-    if (kind === "report" || kind === "review") {
-      return {
-        kind,
-        context,
-        courseProfile: student,
-      };
-    }
-    return {
-      kind,
-      context,
-      questions: (student.courses || []).flatMap((course) =>
-        (course.qa || []).map((item) => ({
-          course: course.course_name,
-          ...item,
-        })),
-      ),
-    };
-  }
-  const teacher = model.teacher?.[context];
-  if (!teacher) return null;
-  if (kind === "questions") {
-    return {
-      kind,
-      context,
-      course: teacher.course_name,
-      className: teacher.class_name,
-      hotTopics: teacher.hotTopics,
-    };
-  }
-  return {
-    kind,
-    context,
-    teacherDashboard: teacher,
-  };
-}
-
 function apiError(error) {
   return json({
     success: false,
@@ -306,11 +172,76 @@ function teacherContext(context) {
   return /^teacher:\d+:\d+$/.test(context);
 }
 
-async function handleApi(request, url, runtimeStore, taskService) {
+async function handleApi(request, url, runtimeStore, taskService, authService, exportService, baseDb) {
+  let resolvedSession;
+  const session = () => {
+    resolvedSession ||= authService.resolve(request);
+    return resolvedSession;
+  };
+  const stateSession = (role) => {
+    const current = session();
+    if (role) requireRole(current, role);
+    authService.requireCsrf(request, current);
+    return current;
+  };
+
+  if (request.method === "POST" && url.pathname === "/api/auth/login") {
+    try {
+      const body = await readJsonBody(request, 4096);
+      const result = authService.login({
+        account: body.account,
+        password: body.password,
+        requestedRole: body.requestedRole,
+        rememberLogin: body.rememberLogin === true,
+        userAgent: request.headers["user-agent"] || "",
+      });
+      await recordAudit({
+        actorRole: result.session.role,
+        accountId: result.session.accountId,
+        sessionId: result.session.sessionId,
+        action: "auth_login_success",
+        objectType: "auth_session",
+        objectRef: result.session.sessionId,
+        result: "success",
+      });
+      return json({ success: true, data: result.data }, 200, { "set-cookie": result.cookie });
+    } catch (error) {
+      if (error instanceof AuthError || error.code) {
+        await recordAudit({
+          actorRole: "anonymous",
+          action: "auth_login_failure",
+          objectType: "auth_account",
+          objectRef: "login",
+          result: "denied",
+          reasonCode: error.code,
+        });
+        return apiError(error);
+      }
+      throw error;
+    }
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/auth/me") {
+    return json({ success: true, data: authService.me(session()) });
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/auth/logout") {
+    const current = stateSession();
+    const clear = authService.logout(current);
+    await recordAudit({
+      actorRole: current.role,
+      accountId: current.accountId,
+      sessionId: current.sessionId,
+      action: "auth_logout",
+      objectType: "auth_session",
+      objectRef: current.sessionId,
+      result: "success",
+    });
+    return json({ success: true, data: { authenticated: false } }, 200, { "set-cookie": clear });
+  }
+
   if (request.method === "GET" && url.pathname === "/api/health") {
-    const db = openDatabase();
-    const integrity = db.prepare("PRAGMA quick_check").get();
-    const studentCount = db.prepare("SELECT COUNT(*) AS count FROM students").get().count;
+    const integrity = baseDb.prepare("PRAGMA quick_check").get();
     const model = await getReadModel();
     return json({
       success: true,
@@ -318,9 +249,9 @@ async function handleApi(request, url, runtimeStore, taskService) {
       database: "sqlite",
       syntheticData: true,
       integrity: Object.values(integrity)[0],
-      studentCount,
       sourceVersion: model.meta.sourceVersion,
       services: {
+        auth: "ready",
         skills: "ready",
         sqlite: "ready",
         network: "not_required",
@@ -329,6 +260,7 @@ async function handleApi(request, url, runtimeStore, taskService) {
   }
 
   if (request.method === "GET" && url.pathname === "/api/catalog") {
+    const current = session();
     const model = await getReadModel();
     return json({
       success: true,
@@ -337,14 +269,20 @@ async function handleApi(request, url, runtimeStore, taskService) {
       updatedAt: model.meta.generatedAt,
       data: {
         meta: model.meta,
-        catalog: model.catalog,
+        catalog: scopedCatalog(baseDb, current),
       },
     });
   }
 
   if (request.method === "GET" && url.pathname === "/api/dashboard") {
+    const current = session();
     const audience = cleanText(url.searchParams.get("audience"), 20);
-    const context = cleanText(url.searchParams.get("context"), 80);
+    let context = cleanText(url.searchParams.get("context"), 80);
+    if (audience !== current.role) {
+      throw new AuthError("AUTH_ROLE_FORBIDDEN", "当前登录身份无权访问该工作台。", 403);
+    }
+    if (audience === "teacher") authorizeTeacherContext(baseDb, current, context);
+    else context = authorizeStudentSelf(current, context);
     if (!validateContext(audience, context)) {
       return json(
         {
@@ -385,21 +323,30 @@ async function handleApi(request, url, runtimeStore, taskService) {
 
   if (request.method === "GET" && url.pathname === "/api/qa/resources") {
     try {
-      const data = await getQaResources(openDatabase(), url.searchParams.get("studentContext"), url.searchParams.get("offeringId"));
+      const current = session();
+      const studentContext = authorizeStudentSelf(current, cleanText(url.searchParams.get("studentContext"), 80));
+      const offeringId = authorizeStudentOffering(baseDb, current, url.searchParams.get("offeringId"));
+      const data = await getQaResources(baseDb, studentContext, offeringId);
       return json({ success: true, data }, 200, { "cache-control": "no-store" });
     } catch (error) { if (error.code) return apiError(error); throw error; }
   }
 
   if (request.method === "GET" && url.pathname === "/api/qa/history") {
     try {
-      const data = getQaHistory(openDatabase(), runtimeStore, url.searchParams.get("studentContext"), url.searchParams.get("offeringId"), url.searchParams.get("limit"));
+      const current = session();
+      const studentContext = authorizeStudentSelf(current, cleanText(url.searchParams.get("studentContext"), 80));
+      const offeringId = authorizeStudentOffering(baseDb, current, url.searchParams.get("offeringId"));
+      const data = getQaHistory(baseDb, runtimeStore, studentContext, offeringId, url.searchParams.get("limit"));
       return json({ success: true, data }, 200, { "cache-control": "no-store" });
     } catch (error) { if (error.code) return apiError(error); throw error; }
   }
 
   if (request.method === "GET" && url.pathname === "/api/qa/teacher-inbox") {
     try {
-      const data = getQaInbox(openDatabase(), runtimeStore, url.searchParams.get("context"), url.searchParams.get("status") || "all", url.searchParams.get("limit"));
+      const current = session();
+      const context = cleanText(url.searchParams.get("context"), 80);
+      authorizeTeacherContext(baseDb, current, context);
+      const data = getQaInbox(baseDb, runtimeStore, context, url.searchParams.get("status") || "all", url.searchParams.get("limit"));
       return json({ success: true, data }, 200, { "cache-control": "no-store" });
     } catch (error) { if (error.code) return apiError(error); throw error; }
   }
@@ -407,19 +354,28 @@ async function handleApi(request, url, runtimeStore, taskService) {
   const qaReplyMatch = /^\/api\/qa\/(qa_[0-9a-f-]+)\/reply$/.exec(url.pathname);
   if (request.method === "POST" && qaReplyMatch) {
     try {
+      const current = stateSession("teacher");
       const body = await readJsonBody(request);
+      const question = runtimeStore.getQa(qaReplyMatch[1]);
+      if (!question) throw new AuthError("AUTH_CONTEXT_FORBIDDEN", "无权访问该问题。", 403);
+      const context = cleanText(body.context || question.teacherContext, 80);
+      authorizeTeacherContext(baseDb, current, context);
+      if (question.teacherContext !== context) throw new AuthError("AUTH_CONTEXT_FORBIDDEN", "无权访问该问题。", 403);
       const rawReply = String(body.reply ?? "").trim();
       if (!rawReply) throw new QaError("QA_REPLY_EMPTY", "请填写教师回复。");
       if (rawReply.length > 2000) throw new QaError("QA_REPLY_TOO_LONG", "教师回复不能超过 2000 字。");
-      const data = await replyQa({ db: openDatabase(), runtimeStore, questionId: qaReplyMatch[1],
-        context: body.context, reply: redactText(rawReply), audit: recordAudit });
+      const data = await replyQa({ db: baseDb, runtimeStore, questionId: qaReplyMatch[1],
+        context, reply: redactText(rawReply), audit: recordAudit });
       return json({ success: true, data }, 200, { "cache-control": "no-store" });
     } catch (error) { if (error.code) return apiError(error); throw error; }
   }
 
   if (request.method === "POST" && url.pathname === "/api/qa") {
     try {
+      const current = stateSession("student");
       const body = await readJsonBody(request);
+      const studentContext = authorizeStudentSelf(current, cleanText(body.studentContext, 80));
+      const offeringId = authorizeStudentOffering(baseDb, current, body.offeringId);
       const question = String(body.question ?? "").trim();
       if (!question) throw new QaError("EMPTY_QUESTION", "请输入需要解答的课程问题。");
       if (question.length > 500) throw new QaError("QUESTION_TOO_LONG", "问题不能超过 500 字。");
@@ -428,8 +384,8 @@ async function handleApi(request, url, runtimeStore, taskService) {
         throw new QaError("PROMPT_INJECTION_BLOCKED", "问题包含越权指令，已拦截。请改为询问课程知识点。");
       }
       const safeQuestion = redactText(question);
-      const data = await answerQa({ db: openDatabase(), runtimeStore, tutor: skills.tutor,
-        studentContext: body.studentContext, offeringId: body.offeringId, question: safeQuestion,
+      const data = await answerQa({ db: baseDb, runtimeStore, tutor: skills.tutor,
+        studentContext, offeringId, question: safeQuestion,
         clientRequestId: body.clientRequestId, studentLevel: cleanText(body.studentLevel || "普通", 20),
         piiRedacted: safeQuestion !== question, audit: recordAudit });
       return json({ success: true, source: "local_skill", data }, 200, { "cache-control": "no-store" });
@@ -438,11 +394,10 @@ async function handleApi(request, url, runtimeStore, taskService) {
 
   if (request.method === "POST" && url.pathname === "/api/import/validate") {
     try {
+      const current = stateSession("teacher");
       const body = await readJsonBody(request, 24 * 1024 * 1024);
       const context = cleanText(body.context, 80);
-      if (!teacherContext(context)) {
-        return json({ success: false, code: "INVALID_CONTEXT", message: "请选择有效的教师课程与班级。" }, 400);
-      }
+      authorizeTeacherContext(baseDb, current, context);
       const parsed = validateImport({ context, fileName: body.fileName, content: body.content });
       const batch = runtimeStore.writeBatch(parsed);
       await recordAudit({
@@ -464,10 +419,9 @@ async function handleApi(request, url, runtimeStore, taskService) {
   }
 
   if (request.method === "GET" && url.pathname === "/api/import/latest") {
+    const current = session();
     const context = cleanText(url.searchParams.get("context"), 80);
-    if (!teacherContext(context)) {
-      return json({ success: false, code: "INVALID_CONTEXT", message: "请选择有效的教师课程与班级。" }, 400);
-    }
+    authorizeTeacherContext(baseDb, current, context);
     const batch = runtimeStore.getLatest(context);
     return json({ success: true, usage: "page_restore_only", data: batch ? {
       batch, quality: batch.quality, issues: runtimeStore.getIssues(batch.batchId),
@@ -478,10 +432,9 @@ async function handleApi(request, url, runtimeStore, taskService) {
 
   const analysisMatch = /^\/api\/analysis\/([^/]+)$/.exec(url.pathname);
   if (request.method === "GET" && analysisMatch) {
+    const current = session();
     const context = cleanText(url.searchParams.get("context"), 80);
-    if (!teacherContext(context)) {
-      return json({ success: false, code: "INVALID_CONTEXT", message: "请选择有效的教师课程与班级。" }, 400);
-    }
+    authorizeTeacherContext(baseDb, current, context);
     const analysisRunId = cleanText(analysisMatch[1], 120);
     const run = runtimeStore.getAnalysisRun(analysisRunId);
     if (!run) return json({ success: false, code: "ANALYSIS_NOT_FOUND", message: "研判记录不存在。" }, 404);
@@ -498,10 +451,11 @@ async function handleApi(request, url, runtimeStore, taskService) {
 
   const confirmMatch = /^\/api\/import\/(b_[0-9a-f-]+)\/confirm$/.exec(url.pathname);
   if (request.method === "POST" && confirmMatch) {
+    const current = stateSession("teacher");
     let body;
     try { body = await readJsonBody(request); } catch (error) { return apiError(error); }
     const context = cleanText(body.context, 80);
-    if (!teacherContext(context)) return json({ success: false, code: "INVALID_CONTEXT", message: "请选择有效的教师课程与班级。" }, 400);
+    authorizeTeacherContext(baseDb, current, context);
     const batch = runtimeStore.getBatch(confirmMatch[1]);
     if (!batch) return json({ success: false, code: "IMPORT_BATCH_NOT_FOUND", message: "导入批次不存在。" }, 404);
     if (batch.context !== context) return json({ success: false, code: "IMPORT_CONTEXT_MISMATCH", message: "该批次不属于当前班级。" }, 403);
@@ -521,6 +475,7 @@ async function handleApi(request, url, runtimeStore, taskService) {
   }
 
   if (request.method === "POST" && url.pathname === "/api/analyze") {
+    const current = stateSession("teacher");
     let body;
     try {
       body = await readJsonBody(request);
@@ -536,7 +491,7 @@ async function handleApi(request, url, runtimeStore, taskService) {
     }
     if (body.batchId !== undefined) {
       const context = cleanText(body.context, 80);
-      if (!teacherContext(context)) return json({ success: false, code: "INVALID_CONTEXT", message: "请选择有效的教师课程与班级。" }, 400);
+      authorizeTeacherContext(baseDb, current, context);
       const batch = runtimeStore.getBatch(cleanText(body.batchId, 80));
       if (!batch) return json({ success: false, code: "IMPORT_BATCH_NOT_FOUND", message: "导入批次不存在。" }, 404);
       if (batch.context !== context) return json({ success: false, code: "IMPORT_CONTEXT_MISMATCH", message: "该批次不属于当前班级。" }, 403);
@@ -582,9 +537,12 @@ async function handleApi(request, url, runtimeStore, taskService) {
 
   if (request.method === "POST" && url.pathname === "/api/tasks/drafts") {
     try {
+      const current = stateSession("teacher");
       const body = await readJsonBody(request);
+      const context = cleanText(body.context, 80);
+      authorizeTeacherContext(baseDb, current, context);
       const data = taskService.createDraft({
-        context: cleanText(body.context, 80),
+        context,
         analysisRunId: cleanText(body.analysisRunId, 120),
       });
       return json({ success: true, data }, 200, { "cache-control": "no-store" });
@@ -594,9 +552,15 @@ async function handleApi(request, url, runtimeStore, taskService) {
   const taskDraftMatch = /^\/api\/tasks\/drafts\/([^/]+)$/.exec(url.pathname);
   if (request.method === "PUT" && taskDraftMatch) {
     try {
+      const current = stateSession("teacher");
       const body = await readJsonBody(request);
-      const data = taskService.updateDraft(cleanText(taskDraftMatch[1], 120), {
-        context: cleanText(body.context, 80), dueAt: body.dueAt, tasks: body.tasks,
+      const versionId = cleanText(taskDraftMatch[1], 120);
+      const scope = taskService.versionScope(versionId);
+      if (!scope) throw new AuthError("AUTH_CONTEXT_FORBIDDEN", "无权访问该任务版本。", 403);
+      authorizeTeacherContext(baseDb, current, scope.context);
+      if (body.context && cleanText(body.context, 80) !== scope.context) throw new AuthError("AUTH_CONTEXT_FORBIDDEN", "任务上下文与授权范围不一致。", 403);
+      const data = taskService.updateDraft(versionId, {
+        context: scope.context, dueAt: body.dueAt, tasks: body.tasks,
       });
       return json({ success: true, data }, 200, { "cache-control": "no-store" });
     } catch (error) { if (error instanceof TaskError || error.code) return apiError(error); throw error; }
@@ -605,9 +569,15 @@ async function handleApi(request, url, runtimeStore, taskService) {
   const taskPublishMatch = /^\/api\/tasks\/drafts\/([^/]+)\/publish$/.exec(url.pathname);
   if (request.method === "POST" && taskPublishMatch) {
     try {
+      const current = stateSession("teacher");
       const body = await readJsonBody(request);
-      const data = taskService.publish(cleanText(taskPublishMatch[1], 120), {
-        context: cleanText(body.context, 80), clientRequestId: cleanText(body.clientRequestId, 120),
+      const versionId = cleanText(taskPublishMatch[1], 120);
+      const scope = taskService.versionScope(versionId);
+      if (!scope) throw new AuthError("AUTH_CONTEXT_FORBIDDEN", "无权访问该任务版本。", 403);
+      authorizeTeacherContext(baseDb, current, scope.context);
+      if (body.context && cleanText(body.context, 80) !== scope.context) throw new AuthError("AUTH_CONTEXT_FORBIDDEN", "任务上下文与授权范围不一致。", 403);
+      const data = taskService.publish(versionId, {
+        context: scope.context, clientRequestId: cleanText(body.clientRequestId, 120),
       });
       return json({ success: true, data }, 200, { "cache-control": "no-store" });
     } catch (error) { if (error instanceof TaskError || error.code) return apiError(error); throw error; }
@@ -616,9 +586,15 @@ async function handleApi(request, url, runtimeStore, taskService) {
   const taskReviseMatch = /^\/api\/tasks\/versions\/([^/]+)\/revise$/.exec(url.pathname);
   if (request.method === "POST" && taskReviseMatch) {
     try {
+      const current = stateSession("teacher");
       const body = await readJsonBody(request);
-      const data = taskService.revise(cleanText(taskReviseMatch[1], 120), {
-        context: cleanText(body.context, 80),
+      const versionId = cleanText(taskReviseMatch[1], 120);
+      const scope = taskService.versionScope(versionId);
+      if (!scope) throw new AuthError("AUTH_CONTEXT_FORBIDDEN", "无权访问该任务版本。", 403);
+      authorizeTeacherContext(baseDb, current, scope.context);
+      if (body.context && cleanText(body.context, 80) !== scope.context) throw new AuthError("AUTH_CONTEXT_FORBIDDEN", "任务上下文与授权范围不一致。", 403);
+      const data = taskService.revise(versionId, {
+        context: scope.context,
       });
       return json({ success: true, data }, 200, { "cache-control": "no-store" });
     } catch (error) { if (error instanceof TaskError || error.code) return apiError(error); throw error; }
@@ -627,9 +603,15 @@ async function handleApi(request, url, runtimeStore, taskService) {
   const taskRevokeMatch = /^\/api\/tasks\/versions\/([^/]+)\/revoke$/.exec(url.pathname);
   if (request.method === "POST" && taskRevokeMatch) {
     try {
+      const current = stateSession("teacher");
       const body = await readJsonBody(request);
-      const data = taskService.revoke(cleanText(taskRevokeMatch[1], 120), {
-        context: cleanText(body.context, 80), reason: body.reason,
+      const versionId = cleanText(taskRevokeMatch[1], 120);
+      const scope = taskService.versionScope(versionId);
+      if (!scope) throw new AuthError("AUTH_CONTEXT_FORBIDDEN", "无权访问该任务版本。", 403);
+      authorizeTeacherContext(baseDb, current, scope.context);
+      if (body.context && cleanText(body.context, 80) !== scope.context) throw new AuthError("AUTH_CONTEXT_FORBIDDEN", "任务上下文与授权范围不一致。", 403);
+      const data = taskService.revoke(versionId, {
+        context: scope.context, reason: body.reason,
       });
       return json({ success: true, data }, 200, { "cache-control": "no-store" });
     } catch (error) { if (error instanceof TaskError || error.code) return apiError(error); throw error; }
@@ -637,16 +619,22 @@ async function handleApi(request, url, runtimeStore, taskService) {
 
   if (request.method === "GET" && url.pathname === "/api/tasks/teacher") {
     try {
-      const data = taskService.teacherTasks(cleanText(url.searchParams.get("context"), 80));
+      const current = session();
+      const context = cleanText(url.searchParams.get("context"), 80);
+      authorizeTeacherContext(baseDb, current, context);
+      const data = taskService.teacherTasks(context);
       return json({ success: true, data }, 200, { "cache-control": "no-store" });
     } catch (error) { if (error instanceof TaskError || error.code) return apiError(error); throw error; }
   }
 
   if (request.method === "GET" && url.pathname === "/api/tasks/student/history") {
     try {
+      const current = session();
+      const studentContext = authorizeStudentSelf(current, cleanText(url.searchParams.get("studentContext"), 80));
+      const offeringId = authorizeStudentOffering(baseDb, current, url.searchParams.get("offeringId"));
       const data = taskService.studentTasks({
-        studentContext: cleanText(url.searchParams.get("studentContext"), 80),
-        offeringId: url.searchParams.get("offeringId"), history: true,
+        studentContext,
+        offeringId, history: true,
       });
       return json({ success: true, data }, 200, { "cache-control": "no-store" });
     } catch (error) { if (error instanceof TaskError || error.code) return apiError(error); throw error; }
@@ -654,9 +642,12 @@ async function handleApi(request, url, runtimeStore, taskService) {
 
   if (request.method === "GET" && url.pathname === "/api/tasks/student") {
     try {
+      const current = session();
+      const studentContext = authorizeStudentSelf(current, cleanText(url.searchParams.get("studentContext"), 80));
+      const offeringId = authorizeStudentOffering(baseDb, current, url.searchParams.get("offeringId"));
       const data = taskService.studentTasks({
-        studentContext: cleanText(url.searchParams.get("studentContext"), 80),
-        offeringId: url.searchParams.get("offeringId"), history: false,
+        studentContext,
+        offeringId, history: false,
       });
       return json({ success: true, data }, 200, { "cache-control": "no-store" });
     } catch (error) { if (error instanceof TaskError || error.code) return apiError(error); throw error; }
@@ -665,9 +656,14 @@ async function handleApi(request, url, runtimeStore, taskService) {
   const taskCompleteMatch = /^\/api\/tasks\/assignments\/([^/]+)\/complete$/.exec(url.pathname);
   if (request.method === "POST" && taskCompleteMatch) {
     try {
+      const current = stateSession("student");
       const body = await readJsonBody(request);
-      const data = taskService.complete(cleanText(taskCompleteMatch[1], 120), {
-        studentContext: cleanText(body.studentContext, 80), feedback: body.feedback,
+      const assignmentId = cleanText(taskCompleteMatch[1], 120);
+      const scope = taskService.assignmentScope(assignmentId);
+      if (!scope || scope.studentId !== current.actorRefId) throw new AuthError("TASK_ASSIGNMENT_FORBIDDEN", "该任务不属于当前学生。", 403);
+      const studentContext = authorizeStudentSelf(current, cleanText(body.studentContext, 80));
+      const data = taskService.complete(assignmentId, {
+        studentContext, feedback: body.feedback,
         clientRequestId: cleanText(body.clientRequestId, 120),
       });
       return json({ success: true, data }, 200, { "cache-control": "no-store" });
@@ -677,99 +673,41 @@ async function handleApi(request, url, runtimeStore, taskService) {
   const taskFeedbackMatch = /^\/api\/tasks\/versions\/([^/]+)\/feedback$/.exec(url.pathname);
   if (request.method === "GET" && taskFeedbackMatch) {
     try {
-      const data = taskService.feedback(cleanText(taskFeedbackMatch[1], 120),
-        cleanText(url.searchParams.get("context"), 80));
+      const current = session();
+      const versionId = cleanText(taskFeedbackMatch[1], 120);
+      const scope = taskService.versionScope(versionId);
+      if (!scope) throw new AuthError("AUTH_CONTEXT_FORBIDDEN", "无权访问该任务版本。", 403);
+      authorizeTeacherContext(baseDb, current, scope.context);
+      const requested = cleanText(url.searchParams.get("context"), 80);
+      if (requested && requested !== scope.context) throw new AuthError("AUTH_CONTEXT_FORBIDDEN", "任务上下文与授权范围不一致。", 403);
+      const data = taskService.feedback(versionId, scope.context);
       return json({ success: true, data }, 200, { "cache-control": "no-store" });
     } catch (error) { if (error instanceof TaskError || error.code) return apiError(error); throw error; }
   }
 
   if (request.method === "GET" && url.pathname === "/api/tasks/feedback-summary") {
     try {
-      const data = taskService.feedbackSummary(cleanText(url.searchParams.get("context"), 80));
+      const current = session();
+      const context = cleanText(url.searchParams.get("context"), 80);
+      authorizeTeacherContext(baseDb, current, context);
+      const data = taskService.feedbackSummary(context);
       return json({ success: true, data }, 200, { "cache-control": "no-store" });
     } catch (error) { if (error instanceof TaskError || error.code) return apiError(error); throw error; }
   }
 
   if (request.method === "GET" && url.pathname === "/api/export") {
-    const role = cleanText(url.searchParams.get("role"), 20);
-    const context = cleanText(url.searchParams.get("context"), 80);
-    const kind = cleanText(url.searchParams.get("kind") || "report", 20);
-    const format = cleanText(url.searchParams.get("format") || "json", 20);
-    if (!validateRequestContext(role, context)) {
-      return json(
-        {
-          success: false,
-          code: "EXPORT_FORBIDDEN",
-          message: "当前身份无权导出该上下文数据。",
-        },
-        403,
-      );
+    return json({ success: false, code: "EXPORT_METHOD_NOT_ALLOWED", message: "正式导出仅支持 POST。" }, 405, { allow: "POST" });
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/export") {
+    const current = stateSession();
+    const body = await readJsonBody(request, 16 * 1024);
+    try {
+      const file = await exportService.generate(current, body);
+      return new Response(file.bytes, { status: 200, headers: file.headers });
+    } catch (error) {
+      throw exportService.normalizeError(error);
     }
-    if (!EXPORT_KINDS.has(kind) || !EXPORT_FORMATS.has(format)) {
-      return json(
-        {
-          success: false,
-          code: "EXPORT_PARAM_INVALID",
-          message: "导出类型或格式不受支持。",
-        },
-        400,
-      );
-    }
-    const payload = await getExportPayload(kind, context);
-    if (!payload) {
-      return json(
-        {
-          success: false,
-          code: "EXPORT_DATA_NOT_FOUND",
-          message: "没有找到可导出的脱敏数据。",
-        },
-        404,
-      );
-    }
-    const watermark = `智学双擎-${role}-${Date.now()}`;
-    const redacted = {
-      ...redactValue(payload),
-      exportMeta: {
-        watermark,
-        generatedAt: new Date().toISOString(),
-        redacted: true,
-        usage: "仅限校内教学复盘使用",
-      },
-    };
-    await recordAudit({
-      actorRole: role,
-      action: "export_data",
-      objectType: "export",
-      objectRef: `${kind}:${format}`,
-      result: "success",
-      watermark,
-    });
-    const commonHeaders = {
-      "content-disposition": `attachment; filename="zhixue-${kind}-${Date.now()}.${
-        format === "excel" ? "xls" : format === "print" ? "html" : format
-      }"`,
-      "x-zhixue-watermark": `zhixue-${role}-${Date.now()}`,
-    };
-    if (format === "json") {
-      return json({ success: true, data: redacted }, 200, commonHeaders);
-    }
-    if (format === "csv") {
-      return text(toCsv(redacted), 200, "text/csv; charset=utf-8", commonHeaders);
-    }
-    if (format === "excel") {
-      return text(
-        toExcelXml(redacted),
-        200,
-        "application/vnd.ms-excel; charset=utf-8",
-        commonHeaders,
-      );
-    }
-    return text(
-      buildPrintHtml("智学双擎教学数据导出", redacted),
-      200,
-      "text/html; charset=utf-8",
-      commonHeaders,
-    );
   }
 
   if (request.method === "GET" && url.pathname === "/api/skills") {
@@ -827,20 +765,29 @@ async function serveStatic(url) {
   }
 }
 
-export function createZhixueServer({ runtimeDbPath, runtimeStore: injectedRuntimeStore } = {}) {
+export function createZhixueServer({
+  runtimeDbPath,
+  runtimeStore: injectedRuntimeStore,
+  baselineDbPath = DATABASE_PATH,
+  secureCookie,
+  exportOptions,
+} = {}) {
+  const baseDb = new DatabaseSync(baselineDbPath, { readOnly: true });
   const runtimeStore = injectedRuntimeStore || createRuntimeStore(runtimeDbPath);
-  const taskService = createTaskService({ baseDb: openDatabase(), runtimeStore, audit: recordAudit });
+  const taskService = createTaskService({ baseDb, runtimeStore, audit: recordAudit });
+  const authService = createAuthService({ baseDb, runtimeStore, secureCookie });
+  const exportService = createExportService({ baseDb, runtimeStore, secondaryAudit: recordAudit, options: exportOptions });
   const server = createServer(async (request, response) => {
     try {
       const url = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`);
       const result = url.pathname.startsWith("/api/")
-        ? await handleApi(request, url, runtimeStore, taskService)
+        ? await handleApi(request, url, runtimeStore, taskService, authService, exportService, baseDb)
         : await serveStatic(url);
       response.writeHead(result.status, Object.fromEntries(result.headers.entries()));
       response.end(Buffer.from(await result.arrayBuffer()));
     } catch (error) {
-      console.error("本地服务异常：", error);
-      const result = json(
+      if (!(error instanceof AuthError) && !(error instanceof ExportError)) console.error("本地服务异常：", error);
+      const result = error instanceof AuthError || error instanceof ExportError || error.code ? apiError(error) : json(
         {
           success: false,
           code: "INTERNAL_ERROR",
@@ -852,7 +799,10 @@ export function createZhixueServer({ runtimeDbPath, runtimeStore: injectedRuntim
       response.end(Buffer.from(await result.arrayBuffer()));
     }
   });
-  if (!injectedRuntimeStore) server.on("close", () => runtimeStore.close());
+  server.on("close", () => {
+    if (!injectedRuntimeStore) runtimeStore.close();
+    baseDb.close();
+  });
   return server;
 }
 

@@ -1,25 +1,20 @@
-const AUTH_KEY = 'zhixue_demo_auth_v1';
 const PAGE = document.body.dataset.page || 'home';
 const authAccounts = {
   teacher:{account:'teacher2026',password:'demo123',name:'演示教师',target:'teacher.html'},
   student:{account:'student2026',password:'demo123',name:'演示学生',target:'student.html'}
 };
 
-function readAuth(){
-  for(const store of [localStorage,sessionStorage]){try{const v=JSON.parse(store.getItem(AUTH_KEY));if(v?.role&&authAccounts[v.role])return v}catch{}}
-  return null;
-}
-function clearAuth(){localStorage.removeItem(AUTH_KEY);sessionStorage.removeItem(AUTH_KEY)}
-function protectWorkspace(){
+let currentAuth=null;
+async function protectWorkspace(){
   if(!['teacher','student'].includes(PAGE))return;
-  const auth=readAuth();
-  if(!auth||auth.role!==PAGE){location.replace(`login.html?role=${PAGE}&next=${PAGE}.html`);return}
-  auth.primaryRole=auth.primaryRole||auth.role;
-  const identity=document.querySelector('#userIdentity');if(identity)identity.textContent=auth.name;
+  try{currentAuth=await window.ZhixueApi.me()}catch{location.replace(`login.html?role=${PAGE}&next=${PAGE}.html`);return}
+  if(currentAuth.role!==PAGE){location.replace(`login.html?role=${PAGE}&next=${PAGE}.html`);return}
+  document.body.classList.remove('auth-pending');
+  const identity=document.querySelector('#userIdentity');if(identity)identity.textContent=currentAuth.displayName;
   const switchBtn=document.querySelector('#roleSwitchBtn');
-  if(switchBtn&&PAGE==='student'&&auth.primaryRole!=='teacher')switchBtn.hidden=true;
+  if(switchBtn)switchBtn.hidden=false;
 }
-protectWorkspace();
+const workspaceReady=protectWorkspace();
 
 const KEY = 'zhixue_learning_loop_v2';
 const seed = {
@@ -65,7 +60,6 @@ function course(){return state.courses.find(x=>x.id===state.activeCourse)||state
 function currentClass(){const c=course();return c?.classes.find(x=>x.id===state.activeClass)||c?.classes[0]}
 function empty(title,desc){return `<div class="empty"><b>${title}</b>${desc}</div>`}
 function download(name,content,type='application/json'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
-function downloadBlob(name,blob){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 
 let databasePayload=null;
 let activeStudentDashboard=null;
@@ -75,11 +69,12 @@ let m2RequestToken=0;
 function setText(selector,value){const el=document.querySelector(selector);if(el&&value!==undefined&&value!==null)el.textContent=value}
 function setDatabaseStatus(mode,meta={}){const el=document.querySelector('#databaseStatus');if(!el)return;el.classList.remove('loading','fallback');if(mode==='local'){el.textContent=`● 本地 SQLite · ${Number(meta.recordCount||0).toLocaleString()} 条`;el.title=`本地只读数据库，共 ${meta.tableCount||0} 类业务表，断网可用`}else if(mode==='database'){el.textContent=`● 云端数据库 · ${Number(meta.recordCount||0).toLocaleString()} 条`;el.title=`D1 数据源，${meta.tableCount||0} 类业务表`}else if(mode==='fallback'){el.classList.add('fallback');el.textContent='● 本地数据快照';el.title='纯静态快照不提供正式答疑、教师待办或跨账号同步'}else{el.classList.add('loading');el.innerHTML='<i></i>数据库连接中'}}
 function databaseCourses(catalog){const map=new Map();catalog.forEach(row=>{const id=`db-${row.offering_id}`;if(!map.has(id))map.set(id,{id,name:row.course_name,code:row.course_code,color:['#7658ef','#29a9ce','#617fff','#2ccf91'][row.offering_id%4],offeringId:row.offering_id,classes:[]});map.get(id).classes.push({id:`db-${row.class_id}`,classId:row.class_id,name:row.class_name,students:row.student_count,imported:true,contextKey:`teacher:${row.offering_id}:${row.class_id}`})});return [...map.values()]}
-async function fetchDatabase(path){const response=await fetch(path,{headers:{accept:'application/json'}});if(!response.ok)throw new Error(`HTTP ${response.status}`);const payload=await response.json();if(!payload.success)throw new Error(payload.error||'database_error');return payload}
+async function fetchDatabase(path){const response=await window.ZhixueApi.apiFetch(path);if(!response.ok)throw new Error(`HTTP ${response.status}`);const payload=await response.json();if(!payload.success)throw new Error(payload.message||payload.error||'database_error');return payload}
 function currentContextKey(){return currentClass()?.contextKey||''}
+window.ZhixueExportScope={current(){if(PAGE==='teacher')return{context:currentContextKey(),courseName:course()?.name||'当前课程',rangeLabel:'当前授权班级'};if(PAGE==='student')return{offeringId:course()?.offeringId,courseName:course()?.name||'当前课程',rangeLabel:'本人授权范围'};return{}}};
 async function loadTeacherDashboard(){if(PAGE!=='teacher')return;const key=currentContextKey(),token=++m2Token;++m2RequestToken;window.ZhixueQaClient?.setTeacherContext(key);m2State={context:key,batch:null,analysis:null,analysisRunId:null,issues:[],preview:[],qualityOverride:null,error:'',busy:false,offline:false};resetM2Visuals();renderM2State();if(!key){setText('#qualitySummary','请先选择数据库中的课程和班级');return}let data;try{data=(await fetchDatabase(`/api/dashboard?audience=teacher&context=${encodeURIComponent(key)}`)).data}catch{data=databasePayload?.teacher?.[key]}if(token!==m2Token)return;if(data){knowledge=data.knowledge||knowledge;renderAll();setText('#studentCount',data.studentCount);setText('#masteryAvg',`${data.averageMastery}%`);setText('#weakCount',data.weakCount);setText('#classAverage',data.averageScore);setText('#classPassRate',`${data.passRate}%`);setText('#classAttendance',`${data.attendanceRate}%`);setText('#classRiskCount',data.riskCount);setText('#tierTotal',data.studentCount);setText('#tierA',data.tiers?.['拓展组']||0);setText('#tierB',data.tiers?.['提升组']||0);setText('#tierC',data.tiers?.['巩固组']||0);const topics=document.querySelector('#databaseHotTopics');if(topics)topics.innerHTML=(data.hotTopics||[]).map(x=>`<span>${esc(x.name)} <b>${x.count}</b></span>`).join('')||'<span>暂无答疑记录</span>'}await restoreM2(key,token);window.ZhixueTaskClient?.setTeacherContext(key,m2State.analysisRunId)}
 function applyStudentCourse(courseId){if(!activeStudentDashboard)return;const selected=activeStudentDashboard.courses.find(x=>x.id===courseId)||activeStudentDashboard.courses[0];if(!selected)return;studentKnowledge=selected.knowledge||studentKnowledge;setText('#studentTier',selected.tier);setText('#studentMastery',`${selected.mastery}%`);setText('#studentScore',Number(selected.score).toFixed(1));window.ZhixueQaClient?.setStudentCourse({offeringId:selected.offering_id,name:selected.course_name});window.ZhixueTaskClient?.setStudentCourse(selected.offering_id);renderAll()}
-async function loadFrontendDatabase(){if(!['teacher','student'].includes(PAGE))return;setDatabaseStatus('loading');let catalogData,source='local';try{catalogData=(await fetchDatabase('/api/catalog')).data}catch{source='fallback';try{databasePayload=await fetch('assets/demo-data.json').then(r=>{if(!r.ok)throw new Error();return r.json()});catalogData={meta:databasePayload.meta,catalog:databasePayload.catalog}}catch{setDatabaseStatus('fallback');return}}if(source==='local'){try{databasePayload=await fetch('assets/demo-data.json').then(r=>r.json())}catch{databasePayload={meta:catalogData.meta,catalog:catalogData.catalog}}}const meta=catalogData.meta||databasePayload?.meta||{};setDatabaseStatus(source,meta);if(PAGE==='teacher'){state.courses=databaseCourses(catalogData.catalog||[]);const preferred=state.courses.find(x=>x.name==='人工智能导论')||state.courses[0];if(!state.courses.some(x=>x.id===state.activeCourse))state.activeCourse=preferred?.id||'';const c=course();if(!c?.classes.some(x=>x.id===state.activeClass))state.activeClass=c?.classes[0]?.id||'';renderAll();await loadTeacherDashboard()}else{let data;try{data=(await fetchDatabase('/api/dashboard?audience=student&context=student%3AS240101')).data}catch{data=databasePayload?.student?.['student:S240101']}if(!data)return;activeStudentDashboard=data;state.courses=(data.courses||[]).map(x=>({id:x.id,name:x.course_name,code:x.course_code,offeringId:x.offering_id,color:['#7658ef','#29a9ce','#617fff','#2ccf91'][x.offering_id%4],classes:[{id:`student-${x.offering_id}`,name:data.student.class_name,students:1,imported:true}]}));state.joined=state.courses.map(x=>x.id);const preferred=data.courses.find(x=>x.course_name==='人工智能导论')||data.courses[0];if(!state.courses.some(x=>x.id===state.activeCourse))state.activeCourse=preferred?.id||'';state.activeClass=course()?.classes[0]?.id||'';setText('#userIdentity',`${data.student.display_name} · 演示账号`);applyStudentCourse(state.activeCourse)}}
+async function loadFrontendDatabase(){if(!['teacher','student'].includes(PAGE))return;setDatabaseStatus('loading');let catalogData;try{catalogData=(await fetchDatabase('/api/catalog')).data}catch(error){setDatabaseStatus('fallback');toast(error.message||'受保护数据加载失败');return}databasePayload={meta:catalogData.meta,catalog:catalogData.catalog};const meta=catalogData.meta||{};setDatabaseStatus('local',meta);if(PAGE==='teacher'){state.courses=databaseCourses(catalogData.catalog||[]);const preferred=state.courses.find(x=>x.name==='人工智能导论')||state.courses[0];if(!state.courses.some(x=>x.id===state.activeCourse))state.activeCourse=preferred?.id||'';const c=course();if(!c?.classes.some(x=>x.id===state.activeClass))state.activeClass=c?.classes[0]?.id||'';renderAll();await loadTeacherDashboard()}else{let data;try{data=(await fetchDatabase('/api/dashboard?audience=student&context=student%3AS240101')).data}catch(error){toast(error.message||'个人学习数据加载失败');return}if(!data)return;activeStudentDashboard=data;state.courses=(data.courses||[]).map(x=>({id:x.id,name:x.course_name,code:x.course_code,offeringId:x.offering_id,color:['#7658ef','#29a9ce','#617fff','#2ccf91'][x.offering_id%4],classes:[{id:`student-${x.offering_id}`,name:data.student.class_name,students:1,imported:true}]}));state.joined=state.courses.map(x=>x.id);const preferred=data.courses.find(x=>x.course_name==='人工智能导论')||data.courses[0];if(!state.courses.some(x=>x.id===state.activeCourse))state.activeCourse=preferred?.id||'';state.activeClass=course()?.classes[0]?.id||'';setText('#userIdentity',`${data.student.display_name} · 演示账号`);applyStudentCourse(state.activeCourse)}}
 
 function setupLogin(){
   if(PAGE!=='login')return;
@@ -91,23 +86,27 @@ function setupLogin(){
   document.querySelector('#fillDemo')?.addEventListener('click',()=>{account.value=authAccounts[role].account;password.value=authAccounts[role].password;error.textContent='';toast('已填入演示账号')});
   document.querySelectorAll('[data-demo-account]').forEach(x=>x.addEventListener('click',()=>{const type=x.dataset.demoAccount;account.value=authAccounts[type].account;password.value=authAccounts[type].password;error.textContent='';toast(`已填入${type==='teacher'?'教师':'学生'}演示账号`)}));
   document.querySelector('#togglePassword')?.addEventListener('click',e=>{const show=password.type==='password';password.type=show?'text':'password';e.currentTarget.textContent=show?'隐藏':'显示'});
-  document.querySelector('#loginForm')?.addEventListener('submit',e=>{
-    e.preventDefault();const expected=authAccounts[role];
+  document.querySelector('#loginForm')?.addEventListener('submit',async e=>{
+    e.preventDefault();
     if(!account.value.trim()||!password.value){error.textContent='请填写演示账号和密码';return}
-    const entered=account.value.trim(),isTeacher=entered===authAccounts.teacher.account&&password.value===authAccounts.teacher.password,isStudent=entered===authAccounts.student.account&&password.value===authAccounts.student.password;
-    if(role==='teacher'&&isStudent){error.textContent='学生账号没有教师端权限，请切换到“学生”身份登录';password.focus();return}
-    if(role==='teacher'&&!isTeacher||role==='student'&&!isTeacher&&!isStudent){error.textContent='演示账号或密码不正确，可点击下方账号一键填入';password.focus();return}
-    const primaryRole=isTeacher?'teacher':'student';const displayName=primaryRole==='teacher'&&role==='student'?'演示教师 · 学生视角':authAccounts[primaryRole].name;
-    clearAuth();const auth={role,primaryRole,name:displayName,account:entered,loginAt:new Date().toISOString()};const store=document.querySelector('#rememberLogin').checked?localStorage:sessionStorage;store.setItem(AUTH_KEY,JSON.stringify(auth));
-    document.querySelector('.login-submit').classList.add('loading');submit.textContent='登录成功，正在进入';error.textContent='';toast('身份验证成功');setTimeout(()=>location.href=expected.target,420);
+    const button=document.querySelector('.login-submit');button.disabled=true;button.classList.add('loading');submit.textContent='服务端正在验证身份';error.textContent='';
+    try{
+      const me=await window.ZhixueApi.login(account.value.trim(),password.value,role,document.querySelector('#rememberLogin').checked);
+      submit.textContent='登录成功，正在进入';toast('服务端身份验证成功');
+      const paramsNext=params.get('next');const target=paramsNext===`${me.role}.html`?paramsNext:me.defaultTarget;
+      setTimeout(()=>location.href=target,260);
+    }catch(loginError){
+      button.disabled=false;button.classList.remove('loading');submit.textContent=`登录并进入${role==='teacher'?'教师端':'学生端'}`;
+      error.textContent=loginError.message||'登录失败，请检查账号密码';password.focus();
+    }
   });
-  const existing=readAuth();if(existing&&authAccounts[existing.role]){const quick=document.createElement('button');quick.className='continue-session';quick.textContent=`继续以“${existing.name}”进入`;quick.onclick=()=>location.href=authAccounts[existing.role].target;document.querySelector('.demo-accounts').before(quick)}
+  window.ZhixueApi.me().then(existing=>{const quick=document.createElement('button');quick.className='continue-session';quick.textContent=`继续以“${existing.displayName}”进入`;quick.onclick=()=>location.href=existing.defaultTarget;document.querySelector('.demo-accounts').before(quick)}).catch(()=>{});
   setRole(role);
 }
 setupLogin();
 
-document.querySelector('#logoutBtn')?.addEventListener('click',()=>{clearAuth();toast('已退出模拟账号');setTimeout(()=>location.href='index.html',260)});
-document.querySelector('#roleSwitchBtn')?.addEventListener('click',e=>{const auth=readAuth(),next=e.currentTarget.dataset.switchRole;if(!auth)return;if(auth.primaryRole!=='teacher'){toast('学生账号没有教师端权限');e.currentTarget.hidden=true;return}const useLocal=!!localStorage.getItem(AUTH_KEY);auth.role=next;auth.name=next==='student'?'演示教师 · 学生视角':'演示教师';clearAuth();(useLocal?localStorage:sessionStorage).setItem(AUTH_KEY,JSON.stringify(auth));toast(next==='student'?'正在切换到学生视角':'正在返回教师端');setTimeout(()=>location.href=authAccounts[next].target,280)});
+document.querySelector('#logoutBtn')?.addEventListener('click',async()=>{try{await window.ZhixueApi.logout()}catch{}toast('已退出服务端会话');setTimeout(()=>location.href='index.html',180)});
+document.querySelector('#roleSwitchBtn')?.addEventListener('click',async e=>{const next=e.currentTarget.dataset.switchRole;try{await window.ZhixueApi.logout()}catch{}toast('切换身份需要重新登录');setTimeout(()=>location.href=`login.html?role=${next}&next=${next}.html`,180)});
 
 const viewCopy={
   teacherHome:['工作台首页','从班级数据出发，完成研判、教学调整与反馈复盘。'],classes:['课程与班级','先建立课程，再按实际教学对象划分班级。'],import:['数据导入与质检','导入匿名学习数据，并在分析前处理数据质量问题。'],analysis:['学情智能研判','查看班级、学生与知识点掌握情况及其依据。'],tasks:['分层任务发布','确认智能体生成的差异化任务并发布到学生端。'],inbox:['学生问题与反馈','处理高频问题，并将结果重新纳入教学研判。'],reports:['报告与复盘','导出学情、答疑记录与教学改进建议。'],
@@ -138,7 +137,7 @@ window.addClass=courseId=>{const input=document.querySelector(`#add-${courseId}`
 document.querySelector('#showCreateCourse')?.addEventListener('click',()=>document.querySelector('#courseBuilder')?.classList.toggle('on'));
 document.querySelector('#createCourse')?.addEventListener('click',()=>{const n=document.querySelector('#newCourseName'),c=document.querySelector('#newCourseCode'),name=n.value.trim(),code=c.value.trim().toUpperCase();if(!name||!code){toast('请填写课程名称和邀请码');return}if(state.courses.some(x=>x.code===code)){toast('该邀请码已存在');return}const id=uid();state.courses.push({id,name,code,color:'#5f7df4',classes:[{id:id+'-1',name:'一班',students:0,imported:false}]});n.value='';c.value='';state.activeCourse=id;state.activeClass=id+'-1';saveState();toast('课程已创建，可继续添加班级')});
 
-async function m2Http(path,options){let response;try{response=await fetch(path,{...options,headers:{accept:'application/json',...(options?.headers||{})}})}catch{const error=new Error('本地服务不可用，真实数据导入与研判暂不可用。请启动 Node 服务。');error.offline=true;throw error}let payload;try{payload=await response.json()}catch{const error=new Error('本地服务不可用，真实数据导入与研判暂不可用。此站点仅提供演示快照。');error.offline=true;throw error}if(!response.ok||!payload.success){const missingApi=response.status===404&&payload.code!=='IMPORT_BATCH_NOT_FOUND';const error=new Error(missingApi?'本地服务不可用，真实数据导入与研判暂不可用。此站点仅提供演示快照。':payload.message||`接口错误 ${response.status}`);error.code=payload.code;error.details=payload;error.offline=missingApi;throw error}return payload.data}
+async function m2Http(path,options){let response;try{response=await window.ZhixueApi.apiFetch(path,options)}catch{const error=new Error('本地服务不可用，真实数据导入与研判暂不可用。请启动 Node 服务。');error.offline=true;throw error}let payload;try{payload=await response.json()}catch{const error=new Error('当前服务未返回有效数据，正式操作已停止。');error.offline=true;throw error}if(!response.ok||!payload.success){const missingApi=response.status===404&&payload.code!=='IMPORT_BATCH_NOT_FOUND';const error=new Error(missingApi?'本地服务不提供该真实操作。':payload.message||`接口错误 ${response.status}`);error.code=payload.code;error.details=payload;error.offline=missingApi;throw error}return payload.data}
 function m2Post(path,body){return m2Http(path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)})}
 function resetM2Visuals(){setText('#classAverage','--');setText('#classPassRate','--');setText('#classAttendance','--');setText('#classRiskCount','--');setText('#thirdMetricLabel','课堂出勤率');setText('#fourthMetricLabel','需重点关注');setText('#averageSource','演示快照');setText('#passSource','演示快照');setText('#thirdMetricSource','演示快照');setText('#fourthMetricSource','演示快照');setText('#m2TierA','--');setText('#m2TierB','--');setText('#m2TierC','--');setText('#m2Advice1','请先导入并确认数据。');setText('#m2Advice2','请先导入并确认数据。');setText('#m2Advice3','请先导入并确认数据。');setText('#knowledgeSource','演示快照；导入后按有效得分均值计算');setText('#analysisSourceNote','当前展示课程数据库演示快照；导入并确认数据后才会显示本批次的真实研判。');setText('#analysisEvidence','尚未对当前班级的导入批次运行研判。');setText('#skillStatus','导入研判待运行')}
 function renderM2Analysis(){
@@ -202,7 +201,6 @@ function renderInbox(){window.ZhixueQaClient?.renderInbox()}
 document.querySelectorAll('[data-filter]').forEach(x=>x.addEventListener('click',()=>{activeFilter=x.dataset.filter;document.querySelectorAll('[data-filter]').forEach(y=>y.classList.toggle('on',y===x));window.ZhixueQaClient?.setFilter(activeFilter)}));
 
 document.querySelector('#copyAdvice')?.addEventListener('click',async()=>{const text=[...document.querySelectorAll('.recommend-grid p')].map(x=>x.textContent).join('\n');try{await navigator.clipboard.writeText(text);toast('教学建议已复制')}catch{toast('复制失败，请手动选择')}});
-document.querySelectorAll('[data-export]').forEach(x=>x.addEventListener('click',async()=>{const kind=x.dataset.export,role=PAGE==='teacher'?'teacher':'student',context=role==='teacher'?currentContextKey():'student:S240101';try{const response=await fetch(`/api/export?role=${role}&context=${encodeURIComponent(context)}&kind=${encodeURIComponent(kind)}&format=json`);if(!response.ok)throw new Error('export unavailable');downloadBlob(`智学双擎_${kind}.json`,await response.blob());toast('脱敏文件已从本地服务导出')}catch{const content={课程:course()?.name,班级:currentClass()?.name,导出时间:new Date().toLocaleString('zh-CN'),类型:kind,知识点掌握:knowledge,学生分层:{拓展组:8,提升组:17,巩固组:11},问题记录:state.questions};download(`智学双擎_${kind}.json`,JSON.stringify(content,null,2));toast('本地服务不可用，已使用当前页面快照导出')}}));
 
 function renderStudentCourses(){const box=document.querySelector('#studentCourseGrid');if(!box)return;const joined=state.courses.filter(x=>state.joined.includes(x.id));box.innerHTML=joined.length?joined.map(c=>`<article class="card course"><div class="cover" style="--c1:${c.color};--c2:#36b5d0"><b>${esc(c.name)}</b><span>${c.classes.length} 个班级空间</span></div><div class="course-body"><div class="course-meta"><span>综合掌握度</span><span>${c.id==='ai'?'64%':'71%'}</span></div><div class="progress"><i style="width:${c.id==='ai'?64:71}%"></i></div><button class="btn sm" onclick="enterStudentCourse('${c.id}')">进入课程</button></div></article>`).join(''):empty('还没有课程','使用教师提供的邀请码加入课程。')}
 window.enterStudentCourse=id=>{state.activeCourse=id;state.activeClass=course()?.classes[0]?.id||'';saveState();applyStudentCourse(id);openView('studentHome');toast('已进入课程')};
@@ -213,10 +211,9 @@ document.querySelector('#sendQuestion')?.addEventListener('click',()=>window.Zhi
 
 function renderStudentTasks(){window.ZhixueTaskClient?.renderStudentTasks()}
 function renderTimeline(){window.ZhixueQaClient?.renderStudentHistory([]);window.ZhixueTaskClient?.renderStudentHistory()}
-document.querySelector('#exportStudentData')?.addEventListener('click',()=>{download('智学双擎_个人学习记录.json',JSON.stringify({课程:course()?.name,掌握画像:studentKnowledge,任务:state.tasks,问题:state.questions},null,2));toast('学习记录已导出')});
 
 function renderAll(){fillMastery();renderCourseSelectors();renderTeacherCourses();renderStudentCourses();renderInbox();renderStudentTasks();renderTimeline()}
 document.querySelector('#refreshAnalysis')?.addEventListener('click',analyzeM2);
 
 function particles(){const c=document.querySelector('#particles');if(!c)return;const ctx=c.getContext('2d');let w,h,points;function size(){w=c.width=innerWidth;h=c.height=innerHeight;points=Array.from({length:Math.min(70,Math.floor(w/22))},()=>({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.18,vy:(Math.random()-.5)*.18,r:Math.random()*1.3+.35}))}function frame(){ctx.clearRect(0,0,w,h);points.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>w)p.vx*=-1;if(p.y<0||p.y>h)p.vy*=-1;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle='rgba(112,170,255,.42)';ctx.fill()});requestAnimationFrame(frame)}size();frame();addEventListener('resize',size)}
-particles();renderAll();loadFrontendDatabase();
+particles();renderAll();workspaceReady.then(()=>{if(['teacher','student'].includes(PAGE)&&currentAuth)loadFrontendDatabase()});
