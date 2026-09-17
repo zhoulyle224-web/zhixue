@@ -1,0 +1,11 @@
+{
+  "encoding": "unicode-code-points",
+  "schoolTerms": [
+    { "id": "known-school-1", "codePoints": [36149, 24030, 22823, 23398] },
+    { "id": "known-school-2", "codePoints": [28023, 21335, 22823, 23398] }
+  ],
+  "schoolUrls": [
+    { "id": "known-school-url-1", "codePoints": [103, 122, 117, 46, 101, 100, 117, 46, 99, 110] },
+    { "id": "known-school-url-2", "codePoints": [104, 97, 105, 110, 97, 110, 117, 46, 101, 100, 117, 46, 99, 110] }
+  ]
+}

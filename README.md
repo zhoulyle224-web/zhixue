@@ -1,131 +1,142 @@
 # 智学双擎
 
-面向教师教学与学生学习双端场景的本地智能辅助 MVP，核心闭环为：
+智学双擎是一套本地优先的教学辅助系统，只聚焦两个核心场景：
+
+1. 学生课后即时答疑：从当前课程资料中检索证据并回答；证据不足时进入教师待办。
+2. 教师学情智能研判：导入匿名成绩与知识点数据，完成质检、研判、分层、任务发布和反馈复盘。
 
 ```text
-课后即时答疑 -> 高频问题沉淀 -> 学情智能研判 -> 教师确认 -> 个性化任务反馈
+课程证据答疑 → 高频问题沉淀 → 数据导入质检 → 学情研判
+→ 教师确认并发布任务 → 学生完成反馈 → 下一轮教学调整
 ```
 
-项目聚焦两个稳定、可演示、可落地的核心场景：
+## 30 秒启动与验收
 
-- 学生课后即时答疑：基于课程资料回答并附引用，资料不足自动转教师。
-- 教师学情智能研判：导入匿名数据、质检、计算画像、分层和教学建议。
+要求 Node.js 22.13 或更高版本；本地正式路径不需要联网，也不需要执行 `npm install`。
 
-## 核心特性
-
-- 本地优先：Node.js 内置 HTTP 与 SQLite 能力，无需外网和 npm 安装。
-- 标准化 Skill：五个教育 Skill 具有明确输入、输出和异常契约。
-- 教师确认：智能体只生成建议和草案，不自动发布高风险动作。
-- 数据安全：数据库只读、页面白名单、导出脱敏、水印和 JSONL 审计。
-- 异常降级：模型或 API 不可用时回到本地规则 Skill 和同源快照。
-- 一键运行：支持 Windows、Linux 和 Docker Compose。
-
-## 快速启动
-
-环境要求：Node.js 22.13 或更高版本。
-
-最简单的 Windows 一键部署方式：
-
-```text
-双击项目根目录的“deploy-and-open.bat”或“一键部署并打开.bat”
+```bash
+node server/local-api.mjs --port 8080
 ```
 
-脚本会自动选择可用端口、后台启动服务并打开默认浏览器。
+浏览器打开 `http://127.0.0.1:8080`。
 
-Windows：
+| 角色 | 合成演示账号 | 密码 | 权限 |
+|---|---|---|---|
+| 教师 | `teacher2026` | `demo123` | 可进入教师端，也可切换学生端观察任务 |
+| 学生 | `student2026` | `demo123` | 只能进入学生端 |
+
+运行测试与发布检查：
+
+```bash
+npm test
+npm run test:static
+npm run test:acceptance
+node scripts/prepare-submission.mjs
+```
+
+数据说明：提交包只包含匿名合成演示数据，不含真实个人、真实组织身份或统一身份配置。完整能力以本地 Node 版为准；公开静态版是受限展示版，不提供正式写操作。
+
+当前验收事实来自 M6 final run `20260917T161508Z_943a95e`：Node 产品测试 175/175、Skill 26/26、M6 E2E 10/10、自动门禁通过；8 项严格人工验收仍为 blocked，因此不能宣称最终参赛交付已经全部完成。
+
+## 一键启动
+
+Windows 可双击 `deploy-and-open.bat` 或 `一键部署并打开.bat`。脚本仅在 8080～8090 中选择空闲端口或复用已识别的智学双擎实例，不会终止无关进程。
+
+也可使用：
 
 ```powershell
-.\scripts\start-zhixue.ps1
+.\scripts\start-zhixue.ps1 -Port 8080
 ```
 
-Linux：
+Linux/macOS 脚本：
 
 ```bash
 chmod +x scripts/start-zhixue.sh
 ./scripts/start-zhixue.sh
 ```
 
-Docker：
+Docker 配置已提供，但是否已复现必须以[部署手册](docs/部署手册.md)中的实际状态为准，不能因配置存在就视为验证通过。
 
-```bash
-docker compose up -d --build
-```
+## 两个核心场景
 
-打开 [http://127.0.0.1:8080](http://127.0.0.1:8080)。
+### 学生课后即时答疑
 
-## 演示账号
+- Session 中的学生身份是唯一身份真相；课程范围必须通过 enrollment 校验。
+- 回答只使用当前课程知识包并返回引用；不能跨课程拼接资料。
+- 证据不足时形成持久化教师待办；教师回复回到同一学生历史。
+- 提示注入、越权与敏感文本在服务端边界被拒绝或脱敏。
 
-| 角色 | 账号 | 密码 |
-|---|---|---|
-| 教师 | `teacher2026` | `demo123` |
-| 学生 | `student2026` | `demo123` |
+### 教师学情智能研判
 
-演示身份只用于功能验收，生产环境必须接入校方统一身份认证。
+- 上传 CSV/JSON 后逐行质检，确认后生成不可变的 analysis run。
+- 形成班级概览、知识点分析、3/5/2 分层和教学建议，保留 batch 与 evidence。
+- 教师基于固定 analysis run 建草案、修改、发布、撤回；学生完成与反馈保留历史。
+- 服务重启后从 runtime SQLite 恢复 Session、QA、研判、任务、完成与反馈。
 
-## 测试
+## 身份、导出与异常边界
 
-```bash
-npm test
-```
+- 本地 Node 版使用服务端 opaque Session、HttpOnly Cookie、CSRF 轮换、角色与对象级授权。
+- 本方案不是生产统一身份系统；未实现 CAS、OAuth、SAML 或 LDAP。
+- 正式导出只接受 `POST /api/export`：教师可导出授权范围内的报告、问题和复盘；学生只能导出本人有效选课范围的学习记录。
+- JSON、CSV、Excel 兼容 XML（`.xls`）由服务端生成；“PDF”路径是打印 HTML 后由浏览器另存，不是服务端原生 PDF。
+- 导出严格审计失败时不返回文件，也不回退到静态演示快照。
 
-测试覆盖：
-
-- 5 个 Skill、26 项契约用例。
-- 9 项本地 API、导出、安全和页面集成用例。
-- 数据库静态暴露、越权导出、提示注入、PII 脱敏用例。
-
-单独核验 Skill：
-
-```bash
-node scripts/verify-skills.cjs
-```
-
-## 目录
-
-```text
-assets/                 页面、样式、读模型和五个 Skill
-server/                 本地 API、Skill 运行时、导出与审计
-data/                   匿名 SQLite 数据和运行时审计
-openclaw/               Agent/Workflow/Tool/Memory/Guardrails 配置
-prompts/                系统、任务、工具、拒答与脱敏提示词
-docs/                   参赛方案、部署、测试、视频和 PPT 材料
-scripts/                Windows/Linux 启动和备份脚本
-tests/                  本地 API 与页面集成测试
-```
-
-## 关键接口
+## 核心接口
 
 | 接口 | 方法 | 用途 |
 |---|---|---|
-| `/api/health` | GET | 检查 SQLite、Skill 和本地运行状态 |
-| `/api/catalog` | GET | 获取课程与班级目录 |
-| `/api/dashboard` | GET | 获取教师或学生脱敏看板 |
-| `/api/qa` | POST | 调用课程答疑 Skill |
-| `/api/import/validate` | POST | 导入 CSV/JSON 并执行逐行质检 |
-| `/api/import/:batchId/confirm` | POST | 幂等确认已质检批次 |
-| `/api/analyze` | POST | 直接分数模式调用 Skill；批次模式每次生成独立 `analysisRunId` |
-| `/api/analysis/:analysisRunId?context=teacher:...` | GET | 按固定 ID 读取已完成研判及来源证据 |
-| `/api/import/latest?context=teacher:...` | GET | 仅供教师页面恢复最近批次，不作为任务来源 |
-| `/api/export` | GET | 鉴权、脱敏、水印和导出 |
-| `/api/skills` | GET | 获取 Skill 注册状态 |
+| `/api/health` | GET | 健康检查 |
+| `/api/auth/login` | POST | 建立服务端 Session |
+| `/api/auth/me` | GET | 恢复 actor 并轮换 CSRF |
+| `/api/auth/logout` | POST | 撤销当前 Session |
+| `/api/catalog` | GET | 获取当前 actor 授权目录 |
+| `/api/dashboard` | GET | 获取教师或学生授权看板 |
+| `/api/qa`、`/api/qa/*` | GET/POST | 学生答疑、历史、教师待办与回复 |
+| `/api/import/*` | GET/POST | 数据质检、确认与最近批次恢复 |
+| `/api/analyze`、`/api/analysis/*` | GET/POST | 创建和读取固定研判 |
+| `/api/tasks/*` | GET/POST/PUT | 草案、发布、撤回、完成与反馈 |
+| `/api/export` | POST | 受控正式导出 |
+| `/api/skills` | GET | Skill 注册状态 |
 
-## 文档导航
+## 测试证据
 
-- [完整参赛优化方案](docs/参赛优化方案.md)
+- 唯一测试事实来源：`evidence/m6/20260917T161508Z_943a95e/`。
+- 自动化：175/175，fail 0，skip 0，todo 0。
+- Skill：26/26。
+- M6 E2E：10/10。
+- Acceptance Matrix：pass 169 / fail 0 / blocked 8。
+- baseline SQLite SHA-256：`bba0fc13a8332286be5acef3e190fcb3abf54f92648254c100073e83873922c4`。
+
+blocked 人工项没有被自动化结果替代，详见[测试与验收摘要](docs/测试与验收摘要.md)。
+
+## 数据与能力边界
+
+- baseline SQLite 与 fixtures 均为确定性匿名合成数据，不代表真实试点或真实教学效果。
+- 参照帝王蟹 Skill 规范组织输入、输出、异常与人工确认；仓库没有可核验的当前实时帝王蟹调用证据。
+- `openclaw/` 是语义兼容的配置映射，不代表当前实时运行 OpenClaw runtime。
+- AI Coding 用于开发与测试辅助，不是系统运行时依赖。
+- 公网模型不是主流程必需项；离线规则 Skill 可复现正式验收链路。
+
+完整声明见[能力边界声明](docs/能力边界声明.md)。
+
+## 目录与交付
+
+```text
+assets/        页面、客户端和课程知识包
+server/        身份、授权、导入研判、任务、导出服务
+data/          合成 baseline（runtime 不进入提交包）
+tests/         M1～M6 自动化与合成 fixtures
+scripts/       启动、测试、发布检查和 staging 生成
+docs/          部署、测试、评分、视频与 PPT 内容稿
+evidence/m6/   唯一 final run 证据
+release/       由发布脚本生成的干净提交目录与 manifest
+```
+
+交付导航：
+
+- [参赛交付总览](docs/参赛交付总览.md)
 - [部署手册](docs/部署手册.md)
-- [测试用例](docs/测试用例.md)
+- [评分证据矩阵](docs/评分证据矩阵.md)
+- [最终验收与提交检查单](docs/最终验收与提交检查单.md)
 - [演示视频脚本](docs/演示视频脚本.md)
-- [PPT 大纲](docs/PPT大纲.md)
-- [评分自评表](docs/评分自评表.md)
-- [M2.5 修改与验收报告](M2.5_修改与验收报告_20260917.md)
-- [OpenClaw 适配](openclaw/README.md)
-- [提示词版本管理](prompts/README.md)
-
-## 项目边界
-
-- 当前课程答疑使用可解释的关键词检索，进阶方案为 SQLite FTS5 加本地向量重排。
-- 当前模型为可选能力，没有模型时规则 Skill 可完整演示主流程。
-- 当前登录为演示认证，生产版需接 CAS、OAuth2 或校方统一身份认证。
-- M2.5 的 `context` 仅用于本地班级隔离，不等同于服务端身份授权；M4 服务端鉴权尚未实现。M3 后续必须固定 `sourceAnalysisRunId` 与 `sourceBatchId`，不可引用动态 `latest`。
-- 当前数据为匿名合成数据，真实数据必须经过校内授权、分级分类和脱敏。
-- PDF 导出使用本地打印页另存，避免引入重型 PDF 字体依赖。
+- [PPT 最终内容稿](docs/PPT大纲.md)
