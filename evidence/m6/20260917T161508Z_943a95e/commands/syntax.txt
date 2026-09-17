@@ -1,0 +1,5 @@
+command: D:/node.exe scripts/run-static-checks.mjs
+exitCode: 0
+durationMs: 4245
+
+[M6] 静态语法检查通过：34 个 JavaScript 文件
