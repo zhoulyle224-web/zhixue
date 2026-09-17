@@ -1,0 +1,4 @@
+{
+  "resourceId": "AI201-knowledge-representation-v1", "dbResourceId": 20, "courseCode": "AI201", "courseName": "人工智能导论", "resourceType": "视频", "title": "知识表示与推理", "chapter": "第2章 知识表示", "version": "demo-2026.09", "synthetic": true, "sourceLabel": "合成演示课程资料",
+  "sections": [{"chunkId":"ai201-knowledge-01","locator":"§2.1 规则与知识表示","tags":["知识表示","产生式规则","推理","规则"],"text":"知识表示把领域中的事实与关系转换为机器可处理的结构。产生式规则常写为“如果条件成立，则得到结论或执行动作”。推理是依据已有事实与规则导出新结论的过程。","method":"先列出已知事实，再找到前提被满足的规则，最后写出规则支持的结论。","summary":"事实和规则提供推理依据，结论不能超出规则支持范围。","guideQuestions":["产生式规则的条件与结论各承担什么作用？","如果规则前提缺少事实，可以直接得出结论吗？"]}]
+}

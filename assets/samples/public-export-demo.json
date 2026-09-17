@@ -1,0 +1,16 @@
+{
+  "sampleMeta": {
+    "type": "public_synthetic_sample",
+    "watermark": "PUBLIC-SAMPLE",
+    "notice": "公开合成样例，仅展示文件结构，不对应任何当前账号、课程、班级或实时业务数据。"
+  },
+  "course": "示例课程",
+  "analysis": {
+    "sampleSize": 10,
+    "averageScore": 78.5,
+    "knowledgePoints": [
+      { "label": "示例知识点 A", "masteryRate": "82%" },
+      { "label": "示例知识点 B", "masteryRate": "75%" }
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "version": "2026.09",
+  "synthetic": true,
+  "sourceLabel": "合成演示课程资料",
+  "courses": {
+    "CS201": {
+      "courseName": "数据结构",
+      "resources": ["CS201/linear-list.json", "CS201/stack-queue.json", "CS201/tree.json"],
+      "sampleQuestions": ["栈和队列的区别是什么？", "为什么栈是后进先出？", "二叉树的前序遍历顺序是什么？"]
+    },
+    "AI201": {
+      "courseName": "人工智能导论",
+      "resources": ["AI201/agent-search.json", "AI201/knowledge-representation.json", "AI201/machine-learning-concepts.json"],
+      "sampleQuestions": ["A* 搜索中的 f(n) 表示什么？", "什么是智能体？", "启发式搜索和无信息搜索有什么区别？"]
+    }
+  }
+}

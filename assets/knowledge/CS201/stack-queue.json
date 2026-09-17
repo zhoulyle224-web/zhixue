@@ -1,0 +1,4 @@
+{
+  "resourceId": "CS201-stack-queue-v1", "dbResourceId": 2, "courseCode": "CS201", "courseName": "数据结构", "resourceType": "视频", "title": "栈与队列", "chapter": "第2章 受限线性表", "version": "demo-2026.09", "synthetic": true, "sourceLabel": "合成演示课程资料",
+  "sections": [{"chunkId":"cs201-stack-queue-01","locator":"§2.1 栈与队列基本概念","tags":["栈","队列","LIFO","FIFO","后进先出","先进先出"],"text":"栈只允许在栈顶插入和删除，因此后压入的元素先被弹出，称为后进先出（LIFO）。队列通常在队尾入队、队头出队，因此先入队的元素先出队，称为先进先出（FIFO）。两者都属于操作位置受限的线性结构。","method":"依次追踪元素 A、B、C 的插入位置和取出位置：栈从同一端取出得到 C、B、A；队列从另一端取出得到 A、B、C。","summary":"区别在于允许操作的端点与由此产生的出序。","guideQuestions":["依次压入 A、B、C，栈的弹出顺序是什么？","队列为什么适合按到达顺序处理任务？"]}]
+}
