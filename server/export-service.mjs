@@ -10,6 +10,10 @@ export const MAX_EXPORT_BYTES = 5 * 1024 * 1024;
 const FORMATS = new Set(["json", "csv", "excel", "print"]);
 const TEACHER_KINDS = new Set(["report", "questions", "review"]);
 const STUDENT_KINDS = new Set(["learning-record"]);
+const STUDENT_IDENTITY_SCOPE_KEYS = new Set([
+  "studentId", "studentNo", "studentContext", "studentRef", "context",
+  "actorId", "actorRefId", "actorRefCode", "accountId", "userId", "session",
+]);
 const FORBIDDEN_KEYS = new Set([
   "display_name", "student_name", "teacher_name", "student_no", "student_id",
   "teacher_id", "email", "phone", "mobile", "id_card", "gender", "address",
@@ -396,7 +400,13 @@ export function createExportService({ baseDb, runtimeStore, secondaryAudit = asy
           : buildTeacherReview(db, baseDb, scope);
     } else {
       requireRole(session, "student");
-      const offeringId = request?.scope?.offeringId;
+      const requestedScope = request?.scope && typeof request.scope === "object" ? request.scope : {};
+      const injectedIdentity = [...STUDENT_IDENTITY_SCOPE_KEYS]
+        .some((key) => Object.hasOwn(requestedScope, key) || Object.hasOwn(request || {}, key));
+      if (injectedIdentity) {
+        throw new ExportError("EXPORT_STUDENT_SCOPE_FORBIDDEN", "学生导出身份只能由当前会话确定。", 403);
+      }
+      const offeringId = requestedScope.offeringId;
       scope = { scopeType: "student_self", scopeRef: "self" };
       built = buildStudentLearningRecord(db, baseDb, session, offeringId);
     }

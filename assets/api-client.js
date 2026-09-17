@@ -23,12 +23,23 @@
 
   async function apiFetch(path, options = {}) {
     const method = String(options.method || 'GET').toUpperCase();
+    const csrfRetry = options.__csrfRetry === true;
+    const { __csrfRetry: _ignored, ...fetchOptions } = options;
     const headers = { accept: 'application/json', ...(options.headers || {}) };
-    if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    const protectedWrite = !['GET', 'HEAD', 'OPTIONS'].includes(method);
+    if (protectedWrite) {
       if (!current?.csrfToken) await me();
       headers['x-csrf-token'] = current.csrfToken;
     }
-    const response = await fetch(path, { ...options, method, headers, credentials: 'same-origin' });
+    const response = await fetch(path, { ...fetchOptions, method, headers, credentials: 'same-origin' });
+    if (protectedWrite && !csrfRetry && !path.startsWith('/api/auth/') && response.status === 403) {
+      let failure = null;
+      try { failure = await response.clone().json(); } catch {}
+      if (failure?.code === 'AUTH_CSRF_INVALID') {
+        await me();
+        return apiFetch(path, { ...options, __csrfRetry: true });
+      }
+    }
     if (response.status === 401 && !path.startsWith('/api/auth/')) {
       current = null;
       const role = document.body.dataset.page === 'student' ? 'student' : 'teacher';

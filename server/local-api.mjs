@@ -423,10 +423,18 @@ async function handleApi(request, url, runtimeStore, taskService, authService, e
     const context = cleanText(url.searchParams.get("context"), 80);
     authorizeTeacherContext(baseDb, current, context);
     const batch = runtimeStore.getLatest(context);
+    const latestCompletedAnalysis = runtimeStore.getLatestCompletedAnalysis(context);
+    const latestCompletedBatch = latestCompletedAnalysis
+      ? runtimeStore.getBatch(latestCompletedAnalysis.batchId)
+      : null;
     return json({ success: true, usage: "page_restore_only", data: batch ? {
       batch, quality: batch.quality, issues: runtimeStore.getIssues(batch.batchId),
       issuesTruncated: batch.quality.blockingIssueCount + batch.quality.warningIssueCount > 500,
       analysis: batch.status === "confirmed" && batch.confirmedAt ? runtimeStore.getLatestAnalysis(batch.batchId) : null,
+      latestCompleted: latestCompletedAnalysis && latestCompletedBatch ? {
+        batch: latestCompletedBatch,
+        analysis: latestCompletedAnalysis,
+      } : null,
     } : null }, 200, { "cache-control": "no-store" });
   }
 

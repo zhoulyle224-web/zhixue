@@ -257,6 +257,17 @@ export function createRuntimeStore(dbPath = DEFAULT_RUNTIME_DB) {
     return row ? mapAnalysis(row, batch) : null;
   }
 
+  function getLatestCompletedAnalysis(context) {
+    const row = db.prepare(`
+      SELECT a.* FROM runtime_analysis_runs a
+      JOIN runtime_import_batches b ON b.id = a.batch_id
+      WHERE a.context_key = ? AND a.status = 'completed'
+        AND b.context_key = ? AND b.status = 'confirmed' AND b.confirmed_at IS NOT NULL
+      ORDER BY b.confirmed_at DESC, b.rowid DESC, a.generated_at DESC, a.rowid DESC LIMIT 1
+    `).get(context, context);
+    return row ? mapAnalysis(row, getBatch(row.batch_id)) : null;
+  }
+
   function getAnalysisRun(analysisRunId) {
     const row = db.prepare("SELECT * FROM runtime_analysis_runs WHERE id = ?").get(analysisRunId);
     return row ? mapAnalysis(row, getBatch(row.batch_id)) : null;
@@ -345,6 +356,7 @@ export function createRuntimeStore(dbPath = DEFAULT_RUNTIME_DB) {
     confirmBatch,
     writeAnalysis,
     getLatestAnalysis,
+    getLatestCompletedAnalysis,
     getAnalysisRun,
     getQa,
     getQaByRequest,
