@@ -1,0 +1,3684 @@
+{
+  "schemaVersion": 1,
+  "generatedFrom": [
+    "REQ-M1",
+    "REQ-M2",
+    "REQ-M3",
+    "REQ-M4",
+    "REQ-M5",
+    "REQ-M6"
+  ],
+  "items": [
+    {
+      "id": "M1-T01",
+      "module": "M1",
+      "title": "CS201 正常回答",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M1",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m1-course-qa.test.mjs"
+      ],
+      "testNames": [
+        "M1-T01"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M1-T02",
+      "module": "M1",
+      "title": "AI201 正常回答",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M1",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m1-course-qa.test.mjs"
+      ],
+      "testNames": [
+        "M1-T02"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M1-T03",
+      "module": "M1",
+      "title": "跨课程禁止串资料",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M1",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m1-course-qa.test.mjs"
+      ],
+      "testNames": [
+        "M1-T03"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M1-T04",
+      "module": "M1",
+      "title": "无资料课程不得使用 DEFAULT_KB",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M1",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m1-course-qa.test.mjs"
+      ],
+      "testNames": [
+        "M1-T04"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M1-T05",
+      "module": "M1",
+      "title": "教师另一 context 能读取正确待办",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M1",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m1-course-qa.test.mjs"
+      ],
+      "testNames": [
+        "M1-T05"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M1-T06",
+      "module": "M1",
+      "title": "错误教师 context 看不到",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M1",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m1-course-qa.test.mjs"
+      ],
+      "testNames": [
+        "M1-T06"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M1-T07",
+      "module": "M1",
+      "title": "教师回复持久化",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M1",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m1-course-qa.test.mjs"
+      ],
+      "testNames": [
+        "M1-T07"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M1-T08",
+      "module": "M1",
+      "title": "服务重启恢复",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M1",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m1-course-qa.test.mjs"
+      ],
+      "testNames": [
+        "M1-T08"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M1-T09",
+      "module": "M1",
+      "title": "PII 脱敏后再存储",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M1",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m1-course-qa.test.mjs"
+      ],
+      "testNames": [
+        "M1-T09"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M1-T10",
+      "module": "M1",
+      "title": "提示注入不产生待办",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M1",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m1-course-qa.test.mjs"
+      ],
+      "testNames": [
+        "M1-T10"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M1-T11",
+      "module": "M1",
+      "title": "引用对应实际知识资源",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M1",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m1-course-qa.test.mjs"
+      ],
+      "testNames": [
+        "M1-T11"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M1-T12",
+      "module": "M1",
+      "title": "重复请求幂等",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M1",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m1-course-qa.test.mjs"
+      ],
+      "testNames": [
+        "M1-T12"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M1-T13",
+      "module": "M1",
+      "title": "基线 DB 未修改",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M1",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m1-course-qa.test.mjs"
+      ],
+      "testNames": [
+        "M1-T13"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M1-T14",
+      "module": "M1",
+      "title": "runtime DB 不可静态访问",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M1",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m1-course-qa.test.mjs"
+      ],
+      "testNames": [
+        "M1-T14"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M1-T15",
+      "module": "M1",
+      "title": "Skill 不再生成错误课程追问",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M1",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m1-course-qa.test.mjs"
+      ],
+      "testNames": [
+        "M1-T15"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M1-T16",
+      "module": "M1",
+      "title": "空 knowledge_base 不自动用 DEFAULT_KB",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M1",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m1-course-qa.test.mjs"
+      ],
+      "testNames": [
+        "M1-T16"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M1-T17",
+      "module": "M1",
+      "title": "student enrollment 校验",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M1",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m1-course-qa.test.mjs"
+      ],
+      "testNames": [
+        "M1-T17"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M1-T18",
+      "module": "M1",
+      "title": "知识包课程错配被拒绝",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M1",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m1-course-qa.test.mjs"
+      ],
+      "testNames": [
+        "M1-T18"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M1-T19",
+      "module": "M1",
+      "title": "待办写入失败不得宣称成功",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M1",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m1-course-qa.test.mjs"
+      ],
+      "testNames": [
+        "M1-T19"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M1-T20",
+      "module": "M1",
+      "title": "原有 /api/qa 安全能力继续通过",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M1",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m1-course-qa.test.mjs"
+      ],
+      "testNames": [
+        "M1-T20"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M2-T01",
+      "module": "M2",
+      "title": "合法 CSV 真实质检",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M2",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m2-import-analysis.test.mjs"
+      ],
+      "testNames": [
+        "M2-T01/M2-T04/M2-T05/M2-T06/M2-T11"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M2-T02",
+      "module": "M2",
+      "title": "合法 JSON",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M2",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m2-import-analysis.test.mjs"
+      ],
+      "testNames": [
+        "M2-T02/M2-T08"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M2-T03",
+      "module": "M2",
+      "title": "逐行异常定位",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M2",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m2-import-analysis.test.mjs"
+      ],
+      "testNames": [
+        "M2-T03/M2-T09"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M2-T04",
+      "module": "M2",
+      "title": "未确认禁止研判",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M2",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m2-import-analysis.test.mjs"
+      ],
+      "testNames": [
+        "M2-T01/M2-T04/M2-T05/M2-T06/M2-T11"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M2-T05",
+      "module": "M2",
+      "title": "确认后真实计算 A",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M2",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m2-import-analysis.test.mjs"
+      ],
+      "testNames": [
+        "M2-T01/M2-T04/M2-T05/M2-T06/M2-T11"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M2-T06",
+      "module": "M2",
+      "title": "更换文件结果变化",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M2",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m2-import-analysis.test.mjs"
+      ],
+      "testNames": [
+        "M2-T01/M2-T04/M2-T05/M2-T06/M2-T11"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M2-T07",
+      "module": "M2",
+      "title": "批次 context 隔离",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M2",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m2-import-analysis.test.mjs"
+      ],
+      "testNames": [
+        "M2-T07/M2-T12"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M2-T08",
+      "module": "M2",
+      "title": "服务重启可恢复",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M2",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m2-import-analysis.test.mjs"
+      ],
+      "testNames": [
+        "M2-T02/M2-T08"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M2-T09",
+      "module": "M2",
+      "title": "原始文件不落盘",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M2",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m2-import-analysis.test.mjs"
+      ],
+      "testNames": [
+        "M2-T03/M2-T09"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M2-T10",
+      "module": "M2",
+      "title": "基线数据库未被修改",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M2",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m2-import-analysis.test.mjs"
+      ],
+      "testNames": [
+        "M2-T10"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M2-T11",
+      "module": "M2",
+      "title": "现有直接 /api/analyze 兼容",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M2",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m2-import-analysis.test.mjs"
+      ],
+      "testNames": [
+        "M2-T01/M2-T04/M2-T05/M2-T06/M2-T11"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M2-T12",
+      "module": "M2",
+      "title": "公开静态路径不暴露 runtime DB",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M2",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m2-import-analysis.test.mjs"
+      ],
+      "testNames": [
+        "M2-T07/M2-T12"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T01",
+      "module": "M3",
+      "title": "无研判不能建草案",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T01"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T02",
+      "module": "M3",
+      "title": "正确创建动态草案",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T02/T03"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T03",
+      "module": "M3",
+      "title": "analysis context 不一致",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T02/T03"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T04",
+      "module": "M3",
+      "title": "无法映射学生则禁止发布",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T04"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T05",
+      "module": "M3",
+      "title": "publishable fixture 成功发布 v1",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T05～T15"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T06",
+      "module": "M3",
+      "title": "分层 assignment 正确",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T05～T15"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T07",
+      "module": "M3",
+      "title": "学生只能读取本人任务",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T05～T15"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T08",
+      "module": "M3",
+      "title": "错误 offering 不能读取",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T05～T15"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T09",
+      "module": "M3",
+      "title": "学生完成持久化",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T05～T15"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T10",
+      "module": "M3",
+      "title": "教师反馈摘要更新",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T05～T15"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T11",
+      "module": "M3",
+      "title": "重复 completion 幂等",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T05～T15"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T12",
+      "module": "M3",
+      "title": "双击发布幂等",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T05～T15"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T13",
+      "module": "M3",
+      "title": "发布版本不可编辑",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T05～T15"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T14",
+      "module": "M3",
+      "title": "创建 v2",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T05～T15"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T15",
+      "module": "M3",
+      "title": "发布 v2 supersede v1",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T05～T15"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T16",
+      "module": "M3",
+      "title": "撤回当前版本",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T09～T18"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T17",
+      "module": "M3",
+      "title": "撤回后禁止完成",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T09～T18"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T18",
+      "module": "M3",
+      "title": "完成记录在撤回后保留",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T09～T18"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T19",
+      "module": "M3",
+      "title": "服务重启恢复",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T19/T20/T21"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T20",
+      "module": "M3",
+      "title": "基线 DB 不变",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T19/T20/T21"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T21",
+      "module": "M3",
+      "title": "runtime DB 不被静态访问",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T19/T20/T21"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T22",
+      "module": "M3",
+      "title": "dueAt 非法阻断",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T22/T23/T24/T25"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T23",
+      "module": "M3",
+      "title": "反馈 PII 脱敏",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T22/T23/T24/T25"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T24",
+      "module": "M3",
+      "title": "任务文本 XSS 安全",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T22/T23/T24/T25"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T25",
+      "module": "M3",
+      "title": "反馈摘要可供后续研判",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T22/T23/T24/T25"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T26",
+      "module": "M3",
+      "title": "静态/API 失败不得假发布",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T26/T27/T28"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T27",
+      "module": "M3",
+      "title": "学生 API 失败不得假完成",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T26/T27/T28"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M3-T28",
+      "module": "M3",
+      "title": "旧 hardcoded 巩固组过滤被移除",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M3",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m3-task-loop.test.mjs"
+      ],
+      "testNames": [
+        "M3-T26/T27/T28"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T01",
+      "module": "M4",
+      "title": "教师正确登录",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T01"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T02",
+      "module": "M4",
+      "title": "学生正确登录",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T02"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T03",
+      "module": "M4",
+      "title": "错误密码",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T03"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T04",
+      "module": "M4",
+      "title": "学生账号不能以 teacher 登录",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T04"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T05",
+      "module": "M4",
+      "title": "无 Cookie 访问 catalog",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T05"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T06",
+      "module": "M4",
+      "title": "教师 catalog 只返回所授 offering",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T06"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T07",
+      "module": "M4",
+      "title": "学生 catalog 只返回本人 enrollments",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T07"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T08",
+      "module": "M4",
+      "title": "教师合法 dashboard",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T08"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T09",
+      "module": "M4",
+      "title": "教师越权 dashboard",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T09"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T10",
+      "module": "M4",
+      "title": "学生访问 teacher dashboard",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T10"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T11",
+      "module": "M4",
+      "title": "学生读取本人 dashboard",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T11"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T12",
+      "module": "M4",
+      "title": "学生伪造另一个 student context",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T12"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T13",
+      "module": "M4",
+      "title": "修改 role query 不越权",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T13"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T14",
+      "module": "M4",
+      "title": "修改 context 不越权",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T14"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T15",
+      "module": "M4",
+      "title": "M1 student API 受 Session 保护",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T15"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T16",
+      "module": "M4",
+      "title": "M1 teacher inbox 学生禁止",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T16"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T17",
+      "module": "M4",
+      "title": "M2 import student 禁止",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T17"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T18",
+      "module": "M4",
+      "title": "M2 teacher 合法 context",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T18"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T19",
+      "module": "M4",
+      "title": "M2 teacher 非本人 context",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T19"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T20",
+      "module": "M4",
+      "title": "M3 teacher API student 禁止",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T20"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T21",
+      "module": "M4",
+      "title": "M3 assignment teacher 不能冒充学生完成",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T21"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T22",
+      "module": "M4",
+      "title": "assignment IDOR",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T22"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T23",
+      "module": "M4",
+      "title": "缺 CSRF 的状态请求",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T23"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T24",
+      "module": "M4",
+      "title": "错误 CSRF",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T24"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T25",
+      "module": "M4",
+      "title": "正确 CSRF",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T25"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T26",
+      "module": "M4",
+      "title": "logout",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T26"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T27",
+      "module": "M4",
+      "title": "Session 过期",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T27"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T28",
+      "module": "M4",
+      "title": "服务重启保持有效 Session",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T28"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T29",
+      "module": "M4",
+      "title": "浏览器 localStorage 伪造不生效",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T29"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T30",
+      "module": "M4",
+      "title": "runtime auth 密码非明文",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T30"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T31",
+      "module": "M4",
+      "title": "Session token 非明文落库",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T31"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T32",
+      "module": "M4",
+      "title": "protected API no-store",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T32"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T33",
+      "module": "M4",
+      "title": "静态 demo 文件无 teacher/student 快照",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T33"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T34",
+      "module": "M4",
+      "title": "runtime DB 仍不可静态访问",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T34"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T35",
+      "module": "M4",
+      "title": "baseline DB 仍不可静态访问",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T35"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T36",
+      "module": "M4",
+      "title": "Worker dashboard fail closed",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T36"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T37",
+      "module": "M4",
+      "title": "401/403 导出不触发前端 fallback",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T37"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T38",
+      "module": "M4",
+      "title": "role switch 不再改 localStorage",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T38"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T39",
+      "module": "M4",
+      "title": "next open redirect 被阻止",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T39"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T40",
+      "module": "M4",
+      "title": "基线 SQLite 哈希不变",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T40"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T41",
+      "module": "M4",
+      "title": "M1/M2/M3 runtime 数据不因 auth migration 丢失",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T41"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T42",
+      "module": "M4",
+      "title": "账号 disabled",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T42"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T43",
+      "module": "M4",
+      "title": "教师 actor inactive",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T43"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T44",
+      "module": "M4",
+      "title": "student 未选 offering",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T44"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M4-T45",
+      "module": "M4",
+      "title": "remember Session 重启后重新获取 CSRF 并继续写操作",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M4",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m4-auth-permissions.test.mjs"
+      ],
+      "testNames": [
+        "M4-T45"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": "M4 最小补强新增回归项"
+    },
+    {
+      "id": "M5-T01",
+      "module": "M5",
+      "title": "未登录正式导出",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T01"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T02",
+      "module": "M5",
+      "title": "旧 GET 被拒绝",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T02"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T03",
+      "module": "M5",
+      "title": "缺 CSRF",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T03"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T04",
+      "module": "M5",
+      "title": "教师合法 report JSON",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T04"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T05",
+      "module": "M5",
+      "title": "教师越权 context",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T05"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T06",
+      "module": "M5",
+      "title": "学生不能导 teacher report",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T06"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T07",
+      "module": "M5",
+      "title": "student learning-record 成功",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T07"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T08",
+      "module": "M5",
+      "title": "student offering 越权",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T08"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T09",
+      "module": "M5",
+      "title": "Teacher report 不含学生列表",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T09"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T10",
+      "module": "M5",
+      "title": "Teacher report 不含 display_name",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T10"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T11",
+      "module": "M5",
+      "title": "Teacher questions studentRef 已遮罩",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T11"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T12",
+      "module": "M5",
+      "title": "自由文本手机号脱敏",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T12"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T13",
+      "module": "M5",
+      "title": "邮箱脱敏",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T13"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T14",
+      "module": "M5",
+      "title": "证件号脱敏",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T14"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T15",
+      "module": "M5",
+      "title": "历史 raw studentNo 二次脱敏",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T15"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T16",
+      "module": "M5",
+      "title": "敏感 key 注入导致 fail closed",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T16"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T17",
+      "module": "M5",
+      "title": "watermark 三处一致",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T17"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T18",
+      "module": "M5",
+      "title": "exportId 一致",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T18"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T19",
+      "module": "M5",
+      "title": "content digest 正确",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T19"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T20",
+      "module": "M5",
+      "title": "JSON audit 不保存正文",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T20"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T21",
+      "module": "M5",
+      "title": "strict audit failure",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T21"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T22",
+      "module": "M5",
+      "title": "formatter failure",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T22"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T23",
+      "module": "M5",
+      "title": "CSV 公式注入",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T23"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T24",
+      "module": "M5",
+      "title": "Excel 公式注入",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T24"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T25",
+      "module": "M5",
+      "title": "Print XSS",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T25"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T26",
+      "module": "M5",
+      "title": "Print 有可视水印",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T26"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T27",
+      "module": "M5",
+      "title": "CSV 有元数据",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T27"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T28",
+      "module": "M5",
+      "title": "Excel 有元数据",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T28"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T29",
+      "module": "M5",
+      "title": "输出超过 5 MiB",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T29"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T30",
+      "module": "M5",
+      "title": "正式导出不落文件",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T30"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T31",
+      "module": "M5",
+      "title": "教师前端 403 不 fallback",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T31"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T32",
+      "module": "M5",
+      "title": "教师前端 503 不 fallback",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T32"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T33",
+      "module": "M5",
+      "title": "学生导出不再直接下载 state",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T33"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T34",
+      "module": "M5",
+      "title": "公开 sample 与当前页面无关",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T34"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T35",
+      "module": "M5",
+      "title": "公开 sample 无 actor 标识",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T35"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T36",
+      "module": "M5",
+      "title": "公开版正式 export fail closed",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T36"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T37",
+      "module": "M5",
+      "title": "runtime DB 不静态暴露",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T37"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T38",
+      "module": "M5",
+      "title": "audit JSONL 不暴露",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T38"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T39",
+      "module": "M5",
+      "title": "baseline DB 不变",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T39"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T40",
+      "module": "M5",
+      "title": "M1/M2/M3/M4 回归",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T40"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T41",
+      "module": "M5",
+      "title": "protected response no-store",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T41"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T42",
+      "module": "M5",
+      "title": "Content-Disposition 安全",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T42"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T43",
+      "module": "M5",
+      "title": "invalid format",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T43"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T44",
+      "module": "M5",
+      "title": "invalid kind",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T44"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T45",
+      "module": "M5",
+      "title": "audited scope 正确",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T45"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T46",
+      "module": "M5",
+      "title": "generated audit 时间早于或等于 response 完成",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T46"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T47",
+      "module": "M5",
+      "title": "不存在 analysis 的 report 不用静态 fallback",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T47"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T48",
+      "module": "M5",
+      "title": "questions 空记录是合法空文件",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "important",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T48"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T49",
+      "module": "M5",
+      "title": "review 不含 raw feedback",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T49"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M5-T50",
+      "module": "M5",
+      "title": "student file 不含 teacher private data",
+      "level": "G2-G6",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M5",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m5-export-security.test.mjs"
+      ],
+      "testNames": [
+        "M5-T50"
+      ],
+      "fixture": "synthetic fixtures / temporary runtime SQLite",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M6-E2E-01",
+      "module": "M6",
+      "title": "M2 A/B 数据真实变化",
+      "level": "G5",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M6",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m6-cross-module.test.mjs"
+      ],
+      "testNames": [
+        "M6-E2E-01"
+      ],
+      "fixture": "tests/fixtures/m2 + tests/fixtures/m3",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M6-E2E-02",
+      "module": "M6",
+      "title": "M1 无依据问题真实转教师",
+      "level": "G5",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M6",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m6-cross-module.test.mjs"
+      ],
+      "testNames": [
+        "M6-E2E-02"
+      ],
+      "fixture": "tests/fixtures/m2 + tests/fixtures/m3",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M6-E2E-03",
+      "module": "M6",
+      "title": "M1 教师回复回到学生",
+      "level": "G5",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M6",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m6-cross-module.test.mjs"
+      ],
+      "testNames": [
+        "M6-E2E-03"
+      ],
+      "fixture": "tests/fixtures/m2 + tests/fixtures/m3",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M6-E2E-04",
+      "module": "M6",
+      "title": "M3 完整任务回流",
+      "level": "G5",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M6",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m6-cross-module.test.mjs"
+      ],
+      "testNames": [
+        "M6-E2E-04"
+      ],
+      "fixture": "tests/fixtures/m2 + tests/fixtures/m3",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M6-E2E-05",
+      "module": "M6",
+      "title": "M3 撤回保留历史",
+      "level": "G5",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M6",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m6-cross-module.test.mjs"
+      ],
+      "testNames": [
+        "M6-E2E-05"
+      ],
+      "fixture": "tests/fixtures/m2 + tests/fixtures/m3",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M6-E2E-06",
+      "module": "M6",
+      "title": "学生伪造教师请求被拒绝",
+      "level": "G5",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M6",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m6-cross-module.test.mjs"
+      ],
+      "testNames": [
+        "M6-E2E-06"
+      ],
+      "fixture": "tests/fixtures/m2 + tests/fixtures/m3",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M6-E2E-07",
+      "module": "M6",
+      "title": "教师越权班级被拒绝",
+      "level": "G5",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M6",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m6-cross-module.test.mjs"
+      ],
+      "testNames": [
+        "M6-E2E-07"
+      ],
+      "fixture": "tests/fixtures/m2 + tests/fixtures/m3",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M6-E2E-08",
+      "module": "M6",
+      "title": "导出服务故障无泄漏",
+      "level": "G5",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M6",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m6-cross-module.test.mjs"
+      ],
+      "testNames": [
+        "M6-E2E-08"
+      ],
+      "fixture": "tests/fixtures/m2 + tests/fixtures/m3",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M6-E2E-09",
+      "module": "M6",
+      "title": "受保护文件不可公开",
+      "level": "G5",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M6",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m6-cross-module.test.mjs"
+      ],
+      "testNames": [
+        "M6-E2E-09"
+      ],
+      "fixture": "tests/fixtures/m2 + tests/fixtures/m3",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "M6-E2E-10",
+      "module": "M6",
+      "title": "服务重启业务状态仍在",
+      "level": "G5",
+      "method": "automated",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M6",
+      "coverageStatus": "自动化已覆盖",
+      "testFiles": [
+        "tests/m6-cross-module.test.mjs"
+      ],
+      "testNames": [
+        "M6-E2E-10"
+      ],
+      "fixture": "tests/fixtures/m2 + tests/fixtures/m3",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": ""
+    },
+    {
+      "id": "MANUAL-M1-01",
+      "module": "M1",
+      "title": "课程切换与有据回答",
+      "level": "G7",
+      "method": "manual",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M6 §177",
+      "coverageStatus": "尚未实现",
+      "testFiles": [],
+      "testNames": [],
+      "fixture": "dedicated manual runtime SQLite and two independent browser sessions",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": "仅可由实际人工验收结果更新，自动脚本不得改绿。"
+    },
+    {
+      "id": "MANUAL-M1-02",
+      "module": "M1",
+      "title": "跨浏览器待办与回复",
+      "level": "G7",
+      "method": "manual",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M6 §177",
+      "coverageStatus": "尚未实现",
+      "testFiles": [],
+      "testNames": [],
+      "fixture": "dedicated manual runtime SQLite and two independent browser sessions",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": "仅可由实际人工验收结果更新，自动脚本不得改绿。"
+    },
+    {
+      "id": "MANUAL-M2-01",
+      "module": "M2",
+      "title": "A/B 页面数值变化",
+      "level": "G7",
+      "method": "manual",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M6 §177",
+      "coverageStatus": "人工已验证",
+      "testFiles": [],
+      "testNames": [],
+      "fixture": "dedicated manual runtime SQLite and two independent browser sessions",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": "仅可由实际人工验收结果更新，自动脚本不得改绿。"
+    },
+    {
+      "id": "MANUAL-M2-02",
+      "module": "M2",
+      "title": "异常文件、刷新与离线",
+      "level": "G7",
+      "method": "manual",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M6 §177",
+      "coverageStatus": "尚未实现",
+      "testFiles": [],
+      "testNames": [],
+      "fixture": "dedicated manual runtime SQLite and two independent browser sessions",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": "仅可由实际人工验收结果更新，自动脚本不得改绿。"
+    },
+    {
+      "id": "MANUAL-M3-01",
+      "module": "M3",
+      "title": "发布→学生完成→教师反馈",
+      "level": "G7",
+      "method": "manual",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M6 §177",
+      "coverageStatus": "尚未实现",
+      "testFiles": [],
+      "testNames": [],
+      "fixture": "dedicated manual runtime SQLite and two independent browser sessions",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": "仅可由实际人工验收结果更新，自动脚本不得改绿。"
+    },
+    {
+      "id": "MANUAL-M3-02",
+      "module": "M3",
+      "title": "撤回→历史→v2",
+      "level": "G7",
+      "method": "manual",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M6 §177",
+      "coverageStatus": "尚未实现",
+      "testFiles": [],
+      "testNames": [
+        "M3-T02/T03"
+      ],
+      "fixture": "dedicated manual runtime SQLite and two independent browser sessions",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": "仅可由实际人工验收结果更新，自动脚本不得改绿。"
+    },
+    {
+      "id": "MANUAL-M4-01",
+      "module": "M4",
+      "title": "双角色登录与越权",
+      "level": "G7",
+      "method": "manual",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M6 §177",
+      "coverageStatus": "尚未实现",
+      "testFiles": [],
+      "testNames": [],
+      "fixture": "dedicated manual runtime SQLite and two independent browser sessions",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": "仅可由实际人工验收结果更新，自动脚本不得改绿。"
+    },
+    {
+      "id": "MANUAL-M4-02",
+      "module": "M4",
+      "title": "localStorage 篡改、logout 与返回",
+      "level": "G7",
+      "method": "manual",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M6 §177",
+      "coverageStatus": "尚未实现",
+      "testFiles": [],
+      "testNames": [],
+      "fixture": "dedicated manual runtime SQLite and two independent browser sessions",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": "仅可由实际人工验收结果更新，自动脚本不得改绿。"
+    },
+    {
+      "id": "MANUAL-M5-01",
+      "module": "M5",
+      "title": "四种正式导出",
+      "level": "G7",
+      "method": "manual",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M6 §177",
+      "coverageStatus": "尚未实现",
+      "testFiles": [],
+      "testNames": [],
+      "fixture": "dedicated manual runtime SQLite and two independent browser sessions",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": "仅可由实际人工验收结果更新，自动脚本不得改绿。"
+    },
+    {
+      "id": "MANUAL-M5-02",
+      "module": "M5",
+      "title": "服务或审计失败不下载",
+      "level": "G7",
+      "method": "manual",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M6 §177",
+      "coverageStatus": "人工已验证",
+      "testFiles": [],
+      "testNames": [],
+      "fixture": "dedicated manual runtime SQLite and two independent browser sessions",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": "仅可由实际人工验收结果更新，自动脚本不得改绿。"
+    },
+    {
+      "id": "MANUAL-M5-03",
+      "module": "M5",
+      "title": "公开合成样例",
+      "level": "G7",
+      "method": "manual",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M6 §177",
+      "coverageStatus": "人工已验证",
+      "testFiles": [],
+      "testNames": [],
+      "fixture": "dedicated manual runtime SQLite and two independent browser sessions",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": "仅可由实际人工验收结果更新，自动脚本不得改绿。"
+    },
+    {
+      "id": "MANUAL-M6-01",
+      "module": "M6",
+      "title": "服务重启综合回归",
+      "level": "G7",
+      "method": "manual",
+      "severity": "blocking",
+      "sourceRequirement": "REQ-M6 §177",
+      "coverageStatus": "尚未实现",
+      "testFiles": [],
+      "testNames": [],
+      "fixture": "dedicated manual runtime SQLite and two independent browser sessions",
+      "lastRunResult": "not_run",
+      "lastRunAt": null,
+      "evidenceRefs": [],
+      "notes": "仅可由实际人工验收结果更新，自动脚本不得改绿。"
+    }
+  ]
+}

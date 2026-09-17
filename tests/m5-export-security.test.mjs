@@ -98,7 +98,15 @@ test('M5-T01～T50 受控导出与异常降级',async t=>{
     await t.test('M5-T37 runtime DB 不静态暴露',async()=>{assert.equal((await fetch(base+'/data/runtime/zhixue_runtime.sqlite')).status,404)});
     await t.test('M5-T38 audit JSONL 不暴露',async()=>{assert.equal((await fetch(base+'/data/runtime/audit.jsonl')).status,404)});
     await t.test('M5-T39 baseline DB 不变',async()=>{assert.equal(await hashFile(BASELINE),baselineBefore)});
-    await t.test('M5-T40 M1/M2/M3/M4 回归门禁已纳入',async()=>{const pkg=JSON.parse(await readFile(join(ROOT,'package.json'),'utf8'));assert.match(pkg.scripts.test,/m1-course-qa|m2-import-analysis|m3-task-loop|m4-auth-permissions/)});
+    await t.test('M5-T40 M1/M2/M3/M4 回归门禁已纳入',async()=>{
+      const pkg=JSON.parse(await readFile(join(ROOT,'package.json'),'utf8'));
+      const runner=await readFile(join(ROOT,'scripts','run-tests.mjs'),'utf8');
+      assert.match(pkg.scripts.test,/scripts\/run-tests\.mjs/);
+      assert.match(runner,/endsWith\("\.test\.mjs"\)/);
+      for(const name of ['m1-course-qa.test.mjs','m2-import-analysis.test.mjs','m3-task-loop.test.mjs','m4-auth-permissions.test.mjs']){
+        assert.ok((await readdir(join(ROOT,'tests'))).includes(name));
+      }
+    });
     await t.test('M5-T41 protected response no-store',()=>{assert.match(report.response.headers.get('cache-control')||'',/private/);assert.match(report.response.headers.get('cache-control')||'',/no-store/)});
     await t.test('M5-T42 Content-Disposition 安全',()=>{const value=report.response.headers.get('content-disposition');assert.match(value,/^attachment; filename="zhixue-report-\d{8}-[A-F0-9]{8}\.json"$/);assert.doesNotMatch(value,/人工智能|班级|S240101|[\r\n]/)});
     await t.test('M5-T43 invalid format',async()=>{const r=await call(teacher,{format:'pdf'});assert.equal(r.status,400);assert.equal(r.json.code,'EXPORT_FORMAT_INVALID')});

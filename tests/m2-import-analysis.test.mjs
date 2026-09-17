@@ -37,7 +37,7 @@ async function validate(base, context, name, content) {
   return post(base, "/api/import/validate", { context, fileName: name, content });
 }
 
-test("数据集 A / B 真实计算并随输入变化，且保留原直接分数接口", async () => {
+test("M2-T01/M2-T04/M2-T05/M2-T06/M2-T11 数据集 A / B 真实计算并随输入变化，且保留原直接分数接口", async () => {
   await withServer(":memory:", async (base) => {
     const a = await validate(base, A, "dataset-a.csv", await fixture("dataset-a.csv"));
     assert.equal(a.status, 200);
@@ -85,7 +85,7 @@ test("数据集 A / B 真实计算并随输入变化，且保留原直接分数�
   });
 });
 
-test("混合异常行被排除、时间警告可保留，PII 不写入返回结果", async () => {
+test("M2-T03/M2-T09 混合异常行被排除、时间警告可保留，PII 与原始文件不落盘", async () => {
   await withServer(":memory:", async (base) => {
     const result = await validate(base, A, "invalid-mixed.csv", await fixture("invalid-mixed.csv"));
     assert.equal(result.status, 200);
@@ -108,7 +108,7 @@ test("混合异常行被排除、时间警告可保留，PII 不写入返回结�
   });
 });
 
-test("批次按班级隔离，错误文件与缺失批次返回明确代码", async () => {
+test("M2-T07/M2-T12 批次按班级隔离，错误文件明确且 runtime DB 不暴露", async () => {
   await withServer(":memory:", async (base) => {
     const a = await validate(base, A, "dataset-a.csv", await fixture("dataset-a.csv"));
     const id = a.payload.data.batch.batchId;
@@ -130,7 +130,7 @@ test("批次按班级隔离，错误文件与缺失批次返回明确代码", as
   });
 });
 
-test("JSON 别名与 CSV 引号/BOM/CRLF 可解析；最近批次重启后保留", async () => {
+test("M2-T02/M2-T08 JSON 与 CSV 可解析；最近批次重启后保留", async () => {
   const dir = await mkdtemp(join(tmpdir(), "zhixue-m2-"));
   const dbPath = join(dir, "runtime.sqlite");
   try {
@@ -168,7 +168,7 @@ test("JSON 别名与 CSV 引号/BOM/CRLF 可解析；最近批次重启后保留
   }
 });
 
-test("5000 行可导入，基线 SQLite 测试前后哈希一致", async () => {
+test("M2-T10 5000 行可导入，基线 SQLite 测试前后哈希一致", async () => {
   const baseline = fileURLToPath(new URL("../data/zhixue_demo.sqlite", import.meta.url));
   const before = createHash("sha256").update(await readFile(baseline)).digest("hex");
   const rows = Array.from({ length: 5000 }, (_, index) => `S${String(index + 1).padStart(6, "0")},知识点A,75`);
