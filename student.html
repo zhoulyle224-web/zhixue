@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="智学双擎学生端：加入课程、查看个人学情、获得有依据的答疑与个性化任务">
-  <title>学生个性化学习空间｜智学双擎</title><link rel="stylesheet" href="assets/style.css">
+  <title>学生个性化学习空间｜智学双擎</title><link rel="stylesheet" href="assets/style.css"><link rel="stylesheet" href="assets/concept.css">
 </head>
-<body data-page="student" class="auth-pending"><canvas id="particles"></canvas><div class="orb one"></div><div class="orb two"></div>
-<nav class="topnav fixed"><a class="brand" href="index.html"><span class="logo">✦</span><span>智学双擎<small>PERSONAL LEARNING SPACE</small></span></a><div class="navlinks"><a href="index.html">平台首页</a><button class="role-switch-btn" id="roleSwitchBtn" data-switch-role="teacher">返回教师端</button></div><div class="user-actions"><span class="user-chip"><i>学</i><b id="userIdentity">演示学生</b></span><button class="logout-btn" id="logoutBtn">退出</button></div></nav>
+<body data-page="student" class="auth-pending concept-workspace student-workspace"><canvas id="particles"></canvas><div class="orb one"></div><div class="orb two"></div>
+<nav class="topnav fixed workspace-nav"><a class="brand concept-brand" href="index.html"><span class="brand-symbol" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b></span><span>智学双擎<small>ZHIXUE DUAL ENGINE</small></span></a><p class="workspace-motto">让每一次学习，<br>都成为看得见的成长。</p><div class="workspace-search"><span>⌕</span>搜索课程、知识点或任务…</div><div class="user-actions"><button class="role-switch-btn" id="roleSwitchBtn" data-switch-role="teacher">返回教师端</button><span class="notify-dot">♧<i>2</i></span><span class="user-chip"><i>学</i><b id="userIdentity">演示学生</b></span><button class="logout-btn" id="logoutBtn">退出</button></div></nav>
 <div class="app-layout">
   <aside class="sidebar">
     <div class="profile"><span class="avatar">学</span><div><b>学生学习空间</b><small>按课程查看学习支持</small></div></div>
@@ -27,7 +27,7 @@
     </header>
 
     <section class="view on" id="studentHome">
-      <article class="card student-welcome"><div><span class="eyebrow">今日学习建议</span><h2>先补齐“模型评估”，再完成迁移练习</h2><p>你的主要薄弱点集中在精确率、召回率与混淆矩阵。完成本组任务后，掌握度预计可提升 8%–12%。</p><div class="welcome-actions"><button class="btn light" onclick="openView('studentTasks')">开始今日任务</button><button class="btn ghost" onclick="openView('assistant')">向课程助手提问</button></div></div><div class="goal-ring"><b id="studentProgress">33%</b><span>本轮任务</span></div></article>
+      <article class="card student-welcome reveal"><div><span class="eyebrow">PERSONALIZED LEARNING PATH</span><h2>让每一次学习都有清晰方向</h2><h3>先补齐“模型评估”，再完成迁移练习</h3><p>你的主要薄弱点集中在精确率、召回率与混淆矩阵。完成本组任务后，掌握度预计可提升 8%–12%。</p><div class="welcome-actions"><button class="btn light" onclick="openView('studentTasks')">开始今日任务</button><button class="btn ghost" onclick="openView('assistant')">向课程助手提问</button></div></div><img class="student-engine-mini" src="assets/hero-engine.png" alt="个性化学习引擎"><div class="goal-ring"><b id="studentProgress">33%</b><span>本轮任务</span></div></article>
       <div class="grid four metric-grid"><article class="card metric"><small>当前学习层次</small><b class="text-lg" id="studentTier">巩固组</b><span>由数据与教师确认</span></article><article class="card metric"><small>综合掌握度</small><b id="studentMastery">64%</b><span class="trend-up">最近一次快照</span></article><article class="card metric"><small>待完成任务</small><b id="studentPendingTasks">2</b><span>本周截止</span></article><article class="card metric"><small>当前课程成绩</small><b id="studentScore">--</b><span>综合成绩</span></article></div>
       <div class="grid student-dashboard"><article class="card panel"><div class="card-head"><div><h3>知识点掌握</h3><small>基于作业、测验与近期学习表现</small></div><button class="link-btn" onclick="openView('portrait')">查看画像 →</button></div><div id="studentMasteryPreview" class="mastery-list"></div></article><article class="card panel"><div class="card-head"><h3>专属学习路径</h3><small>按推荐顺序完成</small></div><div class="path-list"><button onclick="openView('studentTasks')"><i class="done">1</i><span><b>概念微课</b><small>评价指标基础 · 已完成</small></span></button><button onclick="openView('studentTasks')"><i class="active">2</i><span><b>基础练习</b><small>混淆矩阵 · 进行中</small></span></button><button onclick="openView('assistant')"><i>3</i><span><b>问题澄清</b><small>提交仍不理解的一点</small></span></button><button onclick="openView('studentTasks')"><i>4</i><span><b>迁移验证</b><small>新情境应用题</small></span></button></div></article></div>
     </section>
@@ -80,4 +80,5 @@
 <script src="assets/task-client.js?v=m3"></script>
 <script src="assets/app.js"></script>
 <script src="assets/export-client.js"></script>
+<script src="assets/concept-motion.js"></script>
 </body></html>

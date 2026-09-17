@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="智学双擎教师端：按课程和班级导入数据、研判学情、发布分层任务">
-  <title>教师学情工作台｜智学双擎</title><link rel="stylesheet" href="assets/style.css">
+  <title>教师学情工作台｜智学双擎</title><link rel="stylesheet" href="assets/style.css"><link rel="stylesheet" href="assets/concept.css">
 </head>
-<body data-page="teacher" class="auth-pending"><canvas id="particles"></canvas><div class="orb one"></div><div class="orb two"></div>
-<nav class="topnav fixed"><a class="brand" href="index.html"><span class="logo">✦</span><span>智学双擎<small>TEACHING INTELLIGENCE</small></span></a><div class="navlinks"><a href="index.html">平台首页</a><button class="role-switch-btn" id="roleSwitchBtn" data-switch-role="student">切换学生视角</button></div><div class="user-actions"><span class="user-chip"><i>教</i><b id="userIdentity">演示教师</b></span><button class="logout-btn" id="logoutBtn">退出</button></div></nav>
+<body data-page="teacher" class="auth-pending concept-workspace"><canvas id="particles"></canvas><div class="orb one"></div><div class="orb two"></div>
+<nav class="topnav fixed workspace-nav"><a class="brand concept-brand" href="index.html"><span class="brand-symbol" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b></span><span>智学双擎<small>ZHIXUE DUAL ENGINE</small></span></a><p class="workspace-motto">让智慧的教学，<br>让每一位学生被看见。</p><div class="workspace-search"><span>⌕</span>搜索课程、班级或学生…</div><div class="user-actions"><button class="role-switch-btn" id="roleSwitchBtn" data-switch-role="student">切换学生视角</button><span class="notify-dot">♧<i>1</i></span><span class="user-chip"><i>教</i><b id="userIdentity">演示教师</b></span><button class="logout-btn" id="logoutBtn">退出</button></div></nav>
 <div class="app-layout">
   <aside class="sidebar">
-    <div class="profile"><span class="avatar">教</span><div><b>教师学情工作台</b><small>按班级组织分析与教学</small></div></div>
+    <div class="profile"><span class="avatar">教</span><div><b>教师工作台</b><small>TEACHER DASHBOARD</small></div></div>
     <div class="side-label">课程教学</div>
     <button class="menu on" data-view="teacherHome"><span>▦</span>工作台首页</button>
     <button class="menu" data-view="classes"><span>▤</span>课程与班级</button>
@@ -28,6 +28,12 @@
     </header>
 
     <section class="view on" id="teacherHome">
+      <article class="teacher-concept-hero reveal">
+        <div class="teacher-hero-copy"><span>DATA-DRIVEN TEACHING</span><h2>学情智能研判</h2><b>LEARNING INSIGHT DASHBOARD</b><p>数据洞察 · 精准教学 · 因材施教</p></div>
+        <img src="assets/teacher-insight.png" alt="学情分析晶体与数据轨道">
+        <p class="teacher-hand">数据<br>让教学更有方向！</p>
+        <div class="term-card"><span>2026 学年</span><b>第一学期</b><small>教育教学</small></div>
+      </article>
       <div class="process-banner"><div><span>当前教学闭环</span><b id="currentContext">人工智能导论 · 一班</b></div><div class="mini-flow"><span class="done">建课</span><i></i><span class="done">导入</span><i></i><span class="active">研判</span><i></i><span>发布</span><i></i><span>复盘</span></div><button class="btn primary sm" onclick="openView('analysis')">查看研判结果</button></div>
       <div class="grid four metric-grid"><article class="card metric"><small>已导入学生</small><b id="studentCount">36</b><span>匿名记录</span></article><article class="card metric"><small>平均掌握度</small><b id="masteryAvg">72%</b><span class="trend-up">较上次 +4%</span></article><article class="card metric"><small>薄弱知识点</small><b id="weakCount">3</b><span>需要课堂强化</span></article><article class="card metric"><small>待处理反馈</small><b id="pendingCount">0</b><span>问题与任务反馈</span></article></div>
       <div class="grid dashboard-grid">
@@ -102,4 +108,5 @@
 <script src="assets/task-client.js?v=m3"></script>
 <script src="assets/app.js"></script>
 <script src="assets/export-client.js"></script>
+<script src="assets/concept-motion.js"></script>
 </body></html>

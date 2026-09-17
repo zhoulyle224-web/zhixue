@@ -1,7 +1,7 @@
-import { appendFile, mkdir, readFile, stat } from "node:fs/promises";
+import { appendFile, mkdir, readFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { createRequire } from "node:module";
-import { extname, join, normalize, resolve, sep } from "node:path";
+import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DatabaseSync } from "node:sqlite";
 import { buildAnalysisInput, ImportError, SKILL_ID, SKILL_VERSION, validateImport } from "./import-service.mjs";
@@ -10,6 +10,8 @@ import { answerQa, getQaHistory, getQaInbox, getQaResources, QaError, replyQa } 
 import { createTaskService, TaskError } from "./task-service.mjs";
 import { createAuthService, AuthError } from "./auth-service.mjs";
 import { createExportService, ExportError } from "./export-service.mjs";
+import { json, readJsonBody } from "./http-utils.mjs";
+import { createStaticHandler } from "./static-service.mjs";
 import {
   authorizeStudentOffering,
   authorizeStudentSelf,
@@ -30,28 +32,6 @@ const READ_MODEL_PATH = resolve(DATA_ROOT, "web_snapshots.json");
 const AUDIT_PATH = resolve(DATA_ROOT, "runtime", "audit.jsonl");
 const SKILL_ROOT = resolve(ASSETS_ROOT, "skills");
 
-const PUBLIC_PAGES = new Set([
-  "index.html",
-  "login.html",
-  "teacher.html",
-  "student.html",
-  "404.html",
-]);
-
-const MIME_TYPES = {
-  ".html": "text/html; charset=utf-8",
-  ".js": "text/javascript; charset=utf-8",
-  ".mjs": "text/javascript; charset=utf-8",
-  ".css": "text/css; charset=utf-8",
-  ".json": "application/json; charset=utf-8",
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".svg": "image/svg+xml",
-  ".ico": "image/x-icon",
-  ".txt": "text/plain; charset=utf-8",
-};
-
 const PROMPT_INJECTION = [
   /忽略(以上|之前|全部).*(指令|规则)/i,
   /泄露.*(系统提示|密钥|密码)/i,
@@ -61,31 +41,8 @@ const PROMPT_INJECTION = [
 ];
 
 const skills = loadZhixueSkills(SKILL_ROOT);
+const serveStatic = createStaticHandler({ root: ROOT, assetsRoot: ASSETS_ROOT });
 let readModel;
-
-function json(data, status = 200, extraHeaders = {}) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-      "cache-control": "private, no-store",
-      "x-content-type-options": "nosniff",
-      ...extraHeaders,
-    },
-  });
-}
-
-function text(body, status, contentType, extraHeaders = {}) {
-  return new Response(body, {
-    status,
-    headers: {
-      "content-type": contentType,
-      "cache-control": "no-store",
-      "x-content-type-options": "nosniff",
-      ...extraHeaders,
-    },
-  });
-}
 
 async function getReadModel() {
   if (!readModel) {
@@ -115,34 +72,6 @@ function validateContext(audience, context) {
   return false;
 }
 
-function validateRequestContext(role, context) {
-  if (role === "teacher") return /^teacher:\d+:\d+$/.test(context);
-  if (role === "student") return /^student:S\d{6,}$/.test(context);
-  return false;
-}
-
-async function readJsonBody(request, maxBytes = 64 * 1024) {
-  const chunks = [];
-  let size = 0;
-  for await (const chunk of request) {
-    size += chunk.length;
-    if (size > maxBytes) {
-      const error = new Error("请求体过大");
-      error.code = "PAYLOAD_TOO_LARGE";
-      throw error;
-    }
-    chunks.push(chunk);
-  }
-  if (!chunks.length) return {};
-  try {
-    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
-  } catch {
-    const error = new Error("JSON 格式错误");
-    error.code = "INVALID_JSON";
-    throw error;
-  }
-}
-
 async function recordAudit(event) {
   try {
     await mkdir(resolve(DATA_ROOT, "runtime"), { recursive: true });
@@ -166,10 +95,6 @@ function apiError(error) {
     message: error.message,
     ...(error.details || {}),
   }, error.status || (error.code === "PAYLOAD_TOO_LARGE" ? 413 : 400));
-}
-
-function teacherContext(context) {
-  return /^teacher:\d+:\d+$/.test(context);
 }
 
 async function handleApi(request, url, runtimeStore, taskService, authService, exportService, baseDb) {
@@ -730,47 +655,6 @@ async function handleApi(request, url, runtimeStore, taskService, authService, e
     },
     404,
   );
-}
-
-async function serveStatic(url) {
-  let pathname = decodeURIComponent(url.pathname);
-  if (pathname === "/") pathname = "/index.html";
-
-  let filePath;
-  if (pathname.startsWith("/assets/")) {
-    filePath = resolve(ASSETS_ROOT, `.${pathname.slice("/assets".length)}`);
-    if (filePath !== ASSETS_ROOT && !filePath.startsWith(`${ASSETS_ROOT}${sep}`)) {
-      return text("403 forbidden", 403, "text/plain; charset=utf-8");
-    }
-  } else {
-    const pageName = pathname.replace(/^\/+/, "");
-    if (!PUBLIC_PAGES.has(pageName)) {
-      return text("404 not found", 404, "text/plain; charset=utf-8");
-    }
-    filePath = resolve(ROOT, pageName);
-  }
-
-  try {
-    const info = await stat(filePath);
-    if (!info.isFile()) throw new Error("not a file");
-    const body = await readFile(filePath);
-    return new Response(body, {
-      status: 200,
-      headers: {
-        "content-type":
-          MIME_TYPES[extname(filePath).toLowerCase()] || "application/octet-stream",
-        "cache-control": filePath.startsWith(ASSETS_ROOT) ? "public, max-age=300" : "no-cache",
-        "content-length": String(body.length),
-        "x-content-type-options": "nosniff",
-        "content-security-policy":
-          "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'",
-        "referrer-policy": "no-referrer",
-        "x-frame-options": "DENY",
-      },
-    });
-  } catch {
-    return text("404 not found", 404, "text/plain; charset=utf-8");
-  }
 }
 
 export function createZhixueServer({

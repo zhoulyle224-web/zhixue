@@ -9,12 +9,11 @@ const STAGING = join(RELEASE_ROOT, "智学双擎_参赛提交版");
 const ROOT_FILES = [
   ".dockerignore", ".gitignore", ".nojekyll", "404.html", "Dockerfile", "compose.yaml",
   "deploy-and-open.bat", "一键部署并打开.bat", "index.html", "login.html", "student.html",
-  "teacher.html", "package.json", "package-lock.json", "next-env.d.ts", "next.config.ts",
-  "postcss.config.mjs", "tsconfig.json", "vite.config.ts", "eslint.config.mjs", "README.md",
+  "teacher.html", "package.json", "package-lock.json", "README.md",
 ];
 const DIRECTORIES = [
-  ".openai", "app", "assets", "build", "db", "drizzle", "examples", "openclaw", "prompts",
-  "public", "scripts", "server", "tests", "worker", "docs",
+  ".openai", "assets", "db", "drizzle", "openclaw", "prompts", "scripts", "server", "tests",
+  "worker", "docs",
 ];
 const EXCLUDED_SEGMENTS = new Set([
   "node_modules", ".git", "runtime", ".tmp", "backups", "outputs", "work", ".wrangler",

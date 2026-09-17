@@ -34,6 +34,10 @@ npm run test:acceptance
 node scripts/prepare-submission.mjs
 ```
 
+项目运行时只依赖 Node.js 内置模块，不需要下载前端框架或数据库 ORM。`npm run build`
+会生成 `dist/client` 静态站点、`dist/server` 公开版 Worker 与部署元数据；本地正式版
+仍由 `server/local-api.mjs` 启动。
+
 数据说明：提交包只包含匿名合成演示数据，不含真实个人、真实组织身份或统一身份配置。完整能力以本地 Node 版为准；公开静态版是受限展示版，不提供正式写操作。
 
 当前验收事实来自 M6 final run `20260917T171802Z_2db5f2b`：Node 产品测试 175/175、Skill 26/26、M6 E2E 10/10、自动门禁通过；8 项严格人工验收仍为 blocked，因此不能宣称最终参赛交付已经全部完成。
@@ -123,7 +127,7 @@ blocked 人工项没有被自动化结果替代，详见[测试与验收摘要](
 
 ```text
 assets/        页面、客户端和课程知识包
-server/        身份、授权、导入研判、任务、导出服务
+server/        HTTP/静态边界、身份、授权、导入研判、任务、导出服务
 data/          合成 baseline（runtime 不进入提交包）
 tests/         M1～M6 自动化与合成 fixtures
 scripts/       启动、测试、发布检查和 staging 生成
@@ -134,6 +138,7 @@ release/       由发布脚本生成的干净提交目录与 manifest
 
 交付导航：
 
+- [架构说明](docs/架构说明.md)
 - [参赛交付总览](docs/参赛交付总览.md)
 - [部署手册](docs/部署手册.md)
 - [评分证据矩阵](docs/评分证据矩阵.md)
