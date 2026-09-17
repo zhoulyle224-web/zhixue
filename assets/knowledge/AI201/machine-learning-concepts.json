@@ -1,0 +1,4 @@
+{
+  "resourceId": "AI201-ml-concepts-v1", "dbResourceId": 21, "courseCode": "AI201", "courseName": "人工智能导论", "resourceType": "实验指导", "title": "机器学习基本概念", "chapter": "第3章 机器学习入门", "version": "demo-2026.09", "synthetic": true, "sourceLabel": "合成演示课程资料",
+  "sections": [{"chunkId":"ai201-ml-01","locator":"§3.1 训练、验证与泛化","tags":["机器学习","训练集","验证集","泛化","过拟合"],"text":"机器学习通过训练数据调整模型参数。训练集用于学习，验证集用于开发阶段比较方案；泛化指模型对未见数据仍能保持有效表现。若模型过度贴合训练样本而对新样本表现变差，称为过拟合。","method":"区分模型在哪些数据上学习、在哪些数据上评估，再比较训练表现与未见数据表现。","summary":"训练表现好并不自动等于泛化好。","guideQuestions":["验证集为什么不能被当作训练集反复拟合？","如何从训练与未见数据的表现差异识别过拟合？"]}]
+}

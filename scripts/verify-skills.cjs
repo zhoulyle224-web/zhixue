@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const assetsDir = path.join(__dirname, '..', 'github-pages', 'assets', 'skills');
+const assetsDir = path.join(__dirname, '..', 'assets', 'skills');
 const sandbox = { window: {} };
 sandbox.global = sandbox.window;
 vm.createContext(sandbox);
@@ -26,14 +26,20 @@ const results = [];
 function check(name, cond, detail) { results.push({ name, ok: !!cond, detail }); }
 
 // 1. course-ai-tutor：正常解答
-const ans = W.ZhixueSkillTutor.answer({ student_question: '精确率和召回率应该怎么选择？', course_name: '人工智能导论' });
+// M1: 显式注入当前课程资料；缺资料时 Skill 不再隐式回退固定 DEFAULT_KB。
+const tutorKb = [{ resource_id:'fixture-ai', db_resource_id:19, course_code:'AI201', course_name:'人工智能导论',
+  type:'课件', title:'评价指标', ref:'《评价指标》· §1.1 指标', locator:'§1.1 指标',
+  version:'test-1', synthetic:true, source_label:'合成演示课程资料', chunk_id:'fixture-01',
+  tags:['精确率','召回率'], text:'精确率衡量预测正例的准确程度；召回率衡量真正例被找出的程度。',
+  method:'先判断更关心误判还是漏判。', summary:'依错误代价选择指标。', guide_questions:['什么情况下更重视召回率？'] }];
+const ans = W.ZhixueSkillTutor.answer({ student_question: '精确率和召回率应该怎么选择？', course_name: '人工智能导论', knowledge_base: tutorKb });
 check('tutor.已解答', ans.answer_status === '已解答', 'status=' + ans.answer_status);
 check('tutor.有依据', Array.isArray(ans._refs) && ans._refs.length > 0, 'refs=' + (ans._refs||[]).length);
 check('tutor.有引导追问', Array.isArray(ans.guide_questions) && ans.guide_questions.length > 0, 'guide=' + (ans.guide_questions||[]).length);
 check('tutor.输出含核心知识点', /核心知识点/.test(ans.answer_content), 'len=' + ans.answer_content.length);
 
 // 2. course-ai-tutor：资料不足 → 待人工处理
-const pend = W.ZhixueSkillTutor.answer({ student_question: '今天食堂有什么菜？', course_name: '人工智能导论' });
+const pend = W.ZhixueSkillTutor.answer({ student_question: '今天食堂有什么菜？', course_name: '人工智能导论', knowledge_base: tutorKb });
 check('tutor.待人工处理', pend.answer_status === '待人工处理' && pend.guide_questions.length === 0, 'status=' + pend.answer_status);
 
 // 3. academic-performance-analyzer：正常研判（synthetic scores via fromState）

@@ -65,17 +65,21 @@ function course(){return state.courses.find(x=>x.id===state.activeCourse)||state
 function currentClass(){const c=course();return c?.classes.find(x=>x.id===state.activeClass)||c?.classes[0]}
 function empty(title,desc){return `<div class="empty"><b>${title}</b>${desc}</div>`}
 function download(name,content,type='application/json'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function downloadBlob(name,blob){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 
 let databasePayload=null;
 let activeStudentDashboard=null;
+let m2State={context:'',batch:null,analysis:null,analysisRunId:null,issues:[],preview:[],qualityOverride:null,error:'',busy:false,offline:false};
+let m2Token=0;
+let m2RequestToken=0;
 function setText(selector,value){const el=document.querySelector(selector);if(el&&value!==undefined&&value!==null)el.textContent=value}
-function setDatabaseStatus(mode,meta={}){const el=document.querySelector('#databaseStatus');if(!el)return;el.classList.remove('loading','fallback');if(mode==='database'){el.textContent=`● 云端数据库 · ${Number(meta.recordCount||0).toLocaleString()} 条`;el.title=`D1 数据源，${meta.tableCount||0} 类业务表`}else if(mode==='fallback'){el.classList.add('fallback');el.textContent='● 本地数据快照';el.title='当前环境未连接云端数据库，已使用同源脱敏快照'}else{el.classList.add('loading');el.innerHTML='<i></i>数据库连接中'}}
+function setDatabaseStatus(mode,meta={}){const el=document.querySelector('#databaseStatus');if(!el)return;el.classList.remove('loading','fallback');if(mode==='local'){el.textContent=`● 本地 SQLite · ${Number(meta.recordCount||0).toLocaleString()} 条`;el.title=`本地只读数据库，共 ${meta.tableCount||0} 类业务表，断网可用`}else if(mode==='database'){el.textContent=`● 云端数据库 · ${Number(meta.recordCount||0).toLocaleString()} 条`;el.title=`D1 数据源，${meta.tableCount||0} 类业务表`}else if(mode==='fallback'){el.classList.add('fallback');el.textContent='● 本地数据快照';el.title='纯静态快照不提供正式答疑、教师待办或跨账号同步'}else{el.classList.add('loading');el.innerHTML='<i></i>数据库连接中'}}
 function databaseCourses(catalog){const map=new Map();catalog.forEach(row=>{const id=`db-${row.offering_id}`;if(!map.has(id))map.set(id,{id,name:row.course_name,code:row.course_code,color:['#7658ef','#29a9ce','#617fff','#2ccf91'][row.offering_id%4],offeringId:row.offering_id,classes:[]});map.get(id).classes.push({id:`db-${row.class_id}`,classId:row.class_id,name:row.class_name,students:row.student_count,imported:true,contextKey:`teacher:${row.offering_id}:${row.class_id}`})});return [...map.values()]}
 async function fetchDatabase(path){const response=await fetch(path,{headers:{accept:'application/json'}});if(!response.ok)throw new Error(`HTTP ${response.status}`);const payload=await response.json();if(!payload.success)throw new Error(payload.error||'database_error');return payload}
 function currentContextKey(){return currentClass()?.contextKey||''}
-async function loadTeacherDashboard(){if(PAGE!=='teacher')return;const key=currentContextKey();if(!key)return;let data;try{data=(await fetchDatabase(`/api/dashboard?audience=teacher&context=${encodeURIComponent(key)}`)).data}catch{data=databasePayload?.teacher?.[key]}if(!data)return;knowledge=data.knowledge||knowledge;renderAll();setText('#studentCount',data.studentCount);setText('#masteryAvg',`${data.averageMastery}%`);setText('#weakCount',data.weakCount);setText('#pendingCount',data.pendingCount);setText('#classAverage',data.averageScore);setText('#classPassRate',`${data.passRate}%`);setText('#classAttendance',`${data.attendanceRate}%`);setText('#classRiskCount',data.riskCount);setText('#tierTotal',data.studentCount);setText('#tierA',data.tiers?.['拓展组']||0);setText('#tierB',data.tiers?.['提升组']||0);setText('#tierC',data.tiers?.['巩固组']||0);const topics=document.querySelector('#databaseHotTopics');if(topics)topics.innerHTML=(data.hotTopics||[]).map(x=>`<span>${esc(x.name)} <b>${x.count}</b></span>`).join('')||'<span>暂无答疑记录</span>';const qs=document.querySelector('#qualitySummary');if(qs)qs.textContent=`数据库已校验 · ${(data.qualityIssues||[]).reduce((sum,x)=>sum+x.count,0)} 条质量记录`}
-function applyStudentCourse(courseId){if(!activeStudentDashboard)return;const selected=activeStudentDashboard.courses.find(x=>x.id===courseId)||activeStudentDashboard.courses[0];if(!selected)return;studentKnowledge=selected.knowledge||studentKnowledge;setText('#studentTier',selected.tier);setText('#studentMastery',`${selected.mastery}%`);setText('#studentScore',Number(selected.score).toFixed(1));state.tasks=(selected.tasks||[]).map((t,i)=>({id:`db-task-${t.id}`,courseId:selected.id,tier:t.tier,title:t.title,detail:t.assigned_reason,duration:`${20+i*5} 分钟`,done:t.status==='已完成'}));state.questions=(selected.qa||[]).map(q=>({id:`db-qa-${q.id}`,courseId:selected.id,text:q.question,status:q.resolved?'done':'pending',answer:q.answer||'',created:q.started_at,source:'课程数据库答疑记录'}));renderAll()}
-async function loadFrontendDatabase(){if(!['teacher','student'].includes(PAGE))return;setDatabaseStatus('loading');let catalogData,source='database';try{catalogData=(await fetchDatabase('/api/catalog')).data}catch{source='fallback';try{databasePayload=await fetch('assets/demo-data.json').then(r=>{if(!r.ok)throw new Error();return r.json()});catalogData={meta:databasePayload.meta,catalog:databasePayload.catalog}}catch{setDatabaseStatus('fallback');return}}if(source==='database'){try{databasePayload=await fetch('assets/demo-data.json').then(r=>r.json())}catch{databasePayload={meta:catalogData.meta,catalog:catalogData.catalog}}}const meta=catalogData.meta||databasePayload?.meta||{};setDatabaseStatus(source,meta);if(PAGE==='teacher'){state.courses=databaseCourses(catalogData.catalog||[]);const preferred=state.courses.find(x=>x.name==='人工智能导论')||state.courses[0];if(!state.courses.some(x=>x.id===state.activeCourse))state.activeCourse=preferred?.id||'';const c=course();if(!c?.classes.some(x=>x.id===state.activeClass))state.activeClass=c?.classes[0]?.id||'';renderAll();await loadTeacherDashboard()}else{let data;try{data=(await fetchDatabase('/api/dashboard?audience=student&context=student%3AS240101')).data}catch{data=databasePayload?.student?.['student:S240101']}if(!data)return;activeStudentDashboard=data;state.courses=(data.courses||[]).map(x=>({id:x.id,name:x.course_name,code:x.course_code,color:['#7658ef','#29a9ce','#617fff','#2ccf91'][x.offering_id%4],classes:[{id:`student-${x.offering_id}`,name:data.student.class_name,students:1,imported:true}]}));state.joined=state.courses.map(x=>x.id);const preferred=data.courses.find(x=>x.course_name==='人工智能导论')||data.courses[0];if(!state.courses.some(x=>x.id===state.activeCourse))state.activeCourse=preferred?.id||'';state.activeClass=course()?.classes[0]?.id||'';setText('#userIdentity',`${data.student.display_name} · 演示账号`);applyStudentCourse(state.activeCourse)}}
+async function loadTeacherDashboard(){if(PAGE!=='teacher')return;const key=currentContextKey(),token=++m2Token;++m2RequestToken;window.ZhixueQaClient?.setTeacherContext(key);m2State={context:key,batch:null,analysis:null,analysisRunId:null,issues:[],preview:[],qualityOverride:null,error:'',busy:false,offline:false};resetM2Visuals();renderM2State();if(!key){setText('#qualitySummary','请先选择数据库中的课程和班级');return}let data;try{data=(await fetchDatabase(`/api/dashboard?audience=teacher&context=${encodeURIComponent(key)}`)).data}catch{data=databasePayload?.teacher?.[key]}if(token!==m2Token)return;if(data){knowledge=data.knowledge||knowledge;renderAll();setText('#studentCount',data.studentCount);setText('#masteryAvg',`${data.averageMastery}%`);setText('#weakCount',data.weakCount);setText('#classAverage',data.averageScore);setText('#classPassRate',`${data.passRate}%`);setText('#classAttendance',`${data.attendanceRate}%`);setText('#classRiskCount',data.riskCount);setText('#tierTotal',data.studentCount);setText('#tierA',data.tiers?.['拓展组']||0);setText('#tierB',data.tiers?.['提升组']||0);setText('#tierC',data.tiers?.['巩固组']||0);const topics=document.querySelector('#databaseHotTopics');if(topics)topics.innerHTML=(data.hotTopics||[]).map(x=>`<span>${esc(x.name)} <b>${x.count}</b></span>`).join('')||'<span>暂无答疑记录</span>'}await restoreM2(key,token);window.ZhixueTaskClient?.setTeacherContext(key,m2State.analysisRunId)}
+function applyStudentCourse(courseId){if(!activeStudentDashboard)return;const selected=activeStudentDashboard.courses.find(x=>x.id===courseId)||activeStudentDashboard.courses[0];if(!selected)return;studentKnowledge=selected.knowledge||studentKnowledge;setText('#studentTier',selected.tier);setText('#studentMastery',`${selected.mastery}%`);setText('#studentScore',Number(selected.score).toFixed(1));window.ZhixueQaClient?.setStudentCourse({offeringId:selected.offering_id,name:selected.course_name});window.ZhixueTaskClient?.setStudentCourse(selected.offering_id);renderAll()}
+async function loadFrontendDatabase(){if(!['teacher','student'].includes(PAGE))return;setDatabaseStatus('loading');let catalogData,source='local';try{catalogData=(await fetchDatabase('/api/catalog')).data}catch{source='fallback';try{databasePayload=await fetch('assets/demo-data.json').then(r=>{if(!r.ok)throw new Error();return r.json()});catalogData={meta:databasePayload.meta,catalog:databasePayload.catalog}}catch{setDatabaseStatus('fallback');return}}if(source==='local'){try{databasePayload=await fetch('assets/demo-data.json').then(r=>r.json())}catch{databasePayload={meta:catalogData.meta,catalog:catalogData.catalog}}}const meta=catalogData.meta||databasePayload?.meta||{};setDatabaseStatus(source,meta);if(PAGE==='teacher'){state.courses=databaseCourses(catalogData.catalog||[]);const preferred=state.courses.find(x=>x.name==='人工智能导论')||state.courses[0];if(!state.courses.some(x=>x.id===state.activeCourse))state.activeCourse=preferred?.id||'';const c=course();if(!c?.classes.some(x=>x.id===state.activeClass))state.activeClass=c?.classes[0]?.id||'';renderAll();await loadTeacherDashboard()}else{let data;try{data=(await fetchDatabase('/api/dashboard?audience=student&context=student%3AS240101')).data}catch{data=databasePayload?.student?.['student:S240101']}if(!data)return;activeStudentDashboard=data;state.courses=(data.courses||[]).map(x=>({id:x.id,name:x.course_name,code:x.course_code,offeringId:x.offering_id,color:['#7658ef','#29a9ce','#617fff','#2ccf91'][x.offering_id%4],classes:[{id:`student-${x.offering_id}`,name:data.student.class_name,students:1,imported:true}]}));state.joined=state.courses.map(x=>x.id);const preferred=data.courses.find(x=>x.course_name==='人工智能导论')||data.courses[0];if(!state.courses.some(x=>x.id===state.activeCourse))state.activeCourse=preferred?.id||'';state.activeClass=course()?.classes[0]?.id||'';setText('#userIdentity',`${data.student.display_name} · 演示账号`);applyStudentCourse(state.activeCourse)}}
 
 function setupLogin(){
   if(PAGE!=='login')return;
@@ -109,11 +113,11 @@ const viewCopy={
   teacherHome:['工作台首页','从班级数据出发，完成研判、教学调整与反馈复盘。'],classes:['课程与班级','先建立课程，再按实际教学对象划分班级。'],import:['数据导入与质检','导入匿名学习数据，并在分析前处理数据质量问题。'],analysis:['学情智能研判','查看班级、学生与知识点掌握情况及其依据。'],tasks:['分层任务发布','确认智能体生成的差异化任务并发布到学生端。'],inbox:['学生问题与反馈','处理高频问题，并将结果重新纳入教学研判。'],reports:['报告与复盘','导出学情、答疑记录与教学改进建议。'],
   studentHome:['学习首页','查看当前课程、个人薄弱点和待完成任务。'],courses:['我的课程','加入课程并切换独立的学习空间。'],portrait:['个人学情画像','了解掌握情况、证据来源与下一步建议。'],assistant:['课程智能答疑','基于课程资料提问，答案附带引用依据。'],studentTasks:['个性化任务','完成教师确认发布的专属学习任务。'],history:['学习记录与反馈','回看学习过程和掌握度变化。']
 };
-window.openView=function(id){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('on',x.id===id));document.querySelectorAll('.menu').forEach(x=>x.classList.toggle('on',x.dataset.view===id));const copy=viewCopy[id];if(copy){const title=document.querySelector('.page-title'),desc=document.querySelector('.page-desc'),crumb=document.querySelector('#crumbName');if(title)title.textContent=copy[0];if(desc)desc.textContent=copy[1];if(crumb)crumb.textContent=copy[0]}scrollTo({top:0,behavior:'smooth'});renderAll()}
+window.openView=function(id){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('on',x.id===id));document.querySelectorAll('.menu').forEach(x=>x.classList.toggle('on',x.dataset.view===id));const copy=viewCopy[id];if(copy){const title=document.querySelector('.page-title'),desc=document.querySelector('.page-desc'),crumb=document.querySelector('#crumbName');if(title)title.textContent=copy[0];if(desc)desc.textContent=copy[1];if(crumb)crumb.textContent=copy[0]}scrollTo({top:0,behavior:'smooth'});renderAll();if(id==='assistant'||id==='history')window.ZhixueQaClient?.refreshStudent();if(id==='inbox')window.ZhixueQaClient?.refreshTeacher();if(id==='tasks')window.ZhixueTaskClient?.setTeacherContext(currentContextKey(),m2State.analysisRunId);if(id==='studentTasks'||id==='history')window.ZhixueTaskClient?.setStudentCourse(course()?.offeringId)}
 document.querySelectorAll('.menu').forEach(x=>x.addEventListener('click',()=>openView(x.dataset.view)));
 
-function masteryHTML(items){return items.map((x,i)=>`<div class="mastery-row"><div><span>${i+1}</span><b>${x.name}</b><em>${x.value<60?'需补强':x.value<75?'继续巩固':'掌握良好'}</em></div><div class="mastery-track"><i style="width:${x.value}%;--bar:${x.color}"></i></div><strong>${x.value}%</strong></div>`).join('')}
-function fillMastery(){['#knowledgePreview','#knowledgeAnalysis'].forEach(s=>{const e=document.querySelector(s);if(e)e.innerHTML=masteryHTML(knowledge)});['#studentMasteryPreview','#studentMasteryFull'].forEach(s=>{const e=document.querySelector(s);if(e)e.innerHTML=masteryHTML(studentKnowledge)})}
+function masteryHTML(items){return items.map((x,i)=>{const value=Math.max(0,Math.min(100,Number(x.value)||0));return `<div class="mastery-row"><div><span>${i+1}</span><b>${esc(x.name)}</b><em>${value<60?'需补强':value<75?'继续巩固':'掌握良好'}</em></div><div class="mastery-track"><i style="width:${value}%;--bar:${esc(x.color||'#6d87ff')}"></i></div><strong>${value}%</strong></div>`}).join('')}
+function fillMastery(){const preview=document.querySelector('#knowledgePreview');if(preview)preview.innerHTML=masteryHTML(knowledge);const analysis=document.querySelector('#knowledgeAnalysis');if(analysis){const points=m2State.analysis?.knowledge_analysis;analysis.innerHTML=points?.length?masteryHTML(points.map((x,i)=>({name:x.knowledge_point,value:Math.max(0,Math.min(100,parseFloat(x.mastery_rate)||0)),color:['#6d87ff','#44d5e8','#f5ae6f'][i%3]}))):masteryHTML(knowledge)}['#studentMasteryPreview','#studentMasteryFull'].forEach(s=>{const e=document.querySelector(s);if(e)e.innerHTML=masteryHTML(studentKnowledge)})}
 
 function renderCourseSelectors(){
   const c=course();
@@ -129,195 +133,90 @@ document.querySelector('#studentCourseSelect')?.addEventListener('change',e=>{st
 
 function renderTeacherCourses(){const box=document.querySelector('#teacherCourseGrid');if(!box)return;box.innerHTML=state.courses.map(c=>`<article class="card teacher-course ${c.id===state.activeCourse?'selected':''}" style="--course:${c.color}"><header><span class="course-mark">${esc(c.name.slice(0,1))}</span><div><b>${esc(c.name)}</b><small>邀请码 ${esc(c.code)}</small></div><button class="iconbtn" onclick="copyCode('${esc(c.code)}')">复制邀请码</button></header><div class="class-list">${c.classes.map(cl=>`<button onclick="selectContext('${c.id}','${cl.id}')"><span><b>${esc(cl.name)}</b><small>${cl.students} 名学生 · ${cl.imported?'已有数据':'待导入'}</small></span><em>${cl.imported?'可研判':'未导入'}</em></button>`).join('')}</div><footer><input class="field" id="add-${c.id}" placeholder="新班级名称"><button class="btn sm" onclick="addClass('${c.id}')">＋ 添加班级</button></footer></article>`).join('')}
 window.copyCode=async code=>{try{await navigator.clipboard.writeText(code);toast('邀请码已复制')}catch{toast(`邀请码：${code}`)}};
-window.selectContext=(courseId,classId)=>{state.activeCourse=courseId;state.activeClass=classId;saveState();openView('teacherHome');toast('已切换课程与班级')};
+window.selectContext=(courseId,classId)=>{state.activeCourse=courseId;state.activeClass=classId;saveState();openView('teacherHome');loadTeacherDashboard();toast('已切换课程与班级')};
 window.addClass=courseId=>{const input=document.querySelector(`#add-${courseId}`),name=input?.value.trim();if(!name){toast('请输入班级名称');return}const c=state.courses.find(x=>x.id===courseId);c.classes.push({id:uid(),name,students:0,imported:false});saveState();toast('班级已添加')};
 document.querySelector('#showCreateCourse')?.addEventListener('click',()=>document.querySelector('#courseBuilder')?.classList.toggle('on'));
 document.querySelector('#createCourse')?.addEventListener('click',()=>{const n=document.querySelector('#newCourseName'),c=document.querySelector('#newCourseCode'),name=n.value.trim(),code=c.value.trim().toUpperCase();if(!name||!code){toast('请填写课程名称和邀请码');return}if(state.courses.some(x=>x.code===code)){toast('该邀请码已存在');return}const id=uid();state.courses.push({id,name,code,color:'#5f7df4',classes:[{id:id+'-1',name:'一班',students:0,imported:false}]});n.value='';c.value='';state.activeCourse=id;state.activeClass=id+'-1';saveState();toast('课程已创建，可继续添加班级')});
 
-function qualityResult(fileName='示例数据.csv',count=36){return `<div class="quality-result"><div class="quality-file"><span>CSV</span><div><b>${esc(fileName)}</b><small>${count} 条匿名记录 · 已完成字段解析</small></div></div><table><thead><tr><th>检查项目</th><th>结果</th><th>处理建议</th></tr></thead><tbody><tr><td>必要字段</td><td><span class="check good">完整</span></td><td>匿名编号、知识点、得分均存在</td></tr><tr><td>空值检查</td><td><span class="check warn">2 个</span></td><td>建议补充完成时间，可保留分析</td></tr><tr><td>重复记录</td><td><span class="check warn">1 条</span></td><td>将按匿名编号与任务编号去重</td></tr><tr><td>异常成绩</td><td><span class="check good">0 条</span></td><td>所有得分均在 0–100 范围</td></tr></tbody></table></div>`}
-function showQuality(name,count){const box=document.querySelector('#qualityTable');if(!box)return;box.className='';box.innerHTML=qualityResult(name,count);document.querySelector('#qualitySummary').textContent=`${count} 条记录 · 2 项提醒 · 无阻断错误`;document.querySelector('#qualityScore').textContent='质量 94%';document.querySelector('#qualityScore').className='quality-score good';document.querySelector('#ignoreWarnings').disabled=false;document.querySelector('#startAnalysis').disabled=false;state.imported=true;const cl=currentClass();if(cl){cl.imported=true;cl.students=count}saveState()}
-document.querySelectorAll('.data-type').forEach(x=>x.addEventListener('click',()=>{document.querySelectorAll('.data-type').forEach(y=>y.classList.toggle('on',y===x));toast(`已选择${x.dataset.type}数据`)}));
-document.querySelector('#loadSample')?.addEventListener('click',()=>{showQuality('匿名学习数据_示例.csv',36);toast('示例数据已载入并完成质检')});
-document.querySelector('#dataFile')?.addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{let count=f.name.endsWith('.json')?(()=>{try{const d=JSON.parse(reader.result);return Array.isArray(d)?d.length:1}catch{return 0}})():Math.max(0,String(reader.result).trim().split(/\r?\n/).length-1);if(!count){toast('无法识别文件内容');return}showQuality(f.name,count);toast('文件解析完成')};reader.readAsText(f)});
-document.querySelector('#downloadTemplate')?.addEventListener('click',()=>download('学情数据导入模板.csv','匿名编号,知识点,得分,作业完成,互动次数,完成时间\nS001,模型评估,78,是,2,2026-08-24','text/csv;charset=utf-8'));
-document.querySelector('#startAnalysis')?.addEventListener('click',()=>{openView('analysis');if(window.ZhixueSkillAnalyzer){const report=window.ZhixueSkillAnalyzer.fromState(knowledge,currentClass()?.students||36);renderSkillAnalysis(report)}else{toast('已基于确认数据完成研判')}});
-document.querySelector('#ignoreWarnings')?.addEventListener('click',()=>toast('已记录教师确认，提醒项将在报告中保留'));
+async function m2Http(path,options){let response;try{response=await fetch(path,{...options,headers:{accept:'application/json',...(options?.headers||{})}})}catch{const error=new Error('本地服务不可用，真实数据导入与研判暂不可用。请启动 Node 服务。');error.offline=true;throw error}let payload;try{payload=await response.json()}catch{const error=new Error('本地服务不可用，真实数据导入与研判暂不可用。此站点仅提供演示快照。');error.offline=true;throw error}if(!response.ok||!payload.success){const missingApi=response.status===404&&payload.code!=='IMPORT_BATCH_NOT_FOUND';const error=new Error(missingApi?'本地服务不可用，真实数据导入与研判暂不可用。此站点仅提供演示快照。':payload.message||`接口错误 ${response.status}`);error.code=payload.code;error.details=payload;error.offline=missingApi;throw error}return payload.data}
+function m2Post(path,body){return m2Http(path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)})}
+function resetM2Visuals(){setText('#classAverage','--');setText('#classPassRate','--');setText('#classAttendance','--');setText('#classRiskCount','--');setText('#thirdMetricLabel','课堂出勤率');setText('#fourthMetricLabel','需重点关注');setText('#averageSource','演示快照');setText('#passSource','演示快照');setText('#thirdMetricSource','演示快照');setText('#fourthMetricSource','演示快照');setText('#m2TierA','--');setText('#m2TierB','--');setText('#m2TierC','--');setText('#m2Advice1','请先导入并确认数据。');setText('#m2Advice2','请先导入并确认数据。');setText('#m2Advice3','请先导入并确认数据。');setText('#knowledgeSource','演示快照；导入后按有效得分均值计算');setText('#analysisSourceNote','当前展示课程数据库演示快照；导入并确认数据后才会显示本批次的真实研判。');setText('#analysisEvidence','尚未对当前班级的导入批次运行研判。');setText('#skillStatus','导入研判待运行')}
+function renderM2Analysis(){
+  const a=m2State.analysis;if(!a)return;
+  const b=m2State.batch,o=a.overall_summary||{},s=a.student_stratification||{},ad=a.teaching_suggestions||{},e=a._evidence||{};
+  setText('#classAverage',o.average_score);setText('#classPassRate',o.pass_rate);
+  setText('#classAttendance',o.total_students);
+  setText('#classRiskCount',`${b.quality.validRows} / ${b.quality.invalidRows}`);
+  setText('#thirdMetricLabel','有效学生数');setText('#fourthMetricLabel','有效 / 排除行');
+  for(const id of ['#averageSource','#passSource','#thirdMetricSource','#fourthMetricSource'])setText(id,'当前导入批次 · 有效记录');
+  setText('#m2TierA',`${s.excellent_students?.length||0} 人`);
+  setText('#m2TierB',`${s.potential_students?.length||0} 人`);
+  setText('#m2TierC',`${s.struggling_students?.length||0} 人`);
+  setText('#m2Advice1',ad.class_universal?.[0]||'暂无班级建议');
+  setText('#m2Advice2',ad.individual_guidance?.join(' ')||ad.class_universal?.[1]||'暂无分层建议');
+  setText('#m2Advice3',ad.next_teaching_focus||'暂无后续重点');
+  setText('#knowledgeSource','当前导入批次 · 按有效得分均值计算');
+  setText('#analysisSourceNote',`以下结论来自当前已确认的匿名知识点得分导入批次：${b.file.name}。`);
+  setText('#analysisEvidence',`研判 ${m2State.analysisRunId||e.analysisRunId||'未记录'} · 批次 ${b.batchId} · ${b.file.name} · SHA-256 ${b.file.sha256.slice(0,12)}… · 有效 ${b.quality.validRows}/${b.quality.totalRows} 行 · ${o.total_students} 名学生 · ${e.skillId||'academic-performance-analyzer'} ${e.skillVersion||'local-m2-20260917'} · ${e.analyzedAt||e.generatedAt||'已保存'}`);
+  setText('#skillStatus','本地 Skill · 已完成研判');fillMastery();
+}
+function renderM2State(){
+  if(PAGE!=='teacher')return;
+  const b=m2State.batch,q=b?.quality||m2State.qualityOverride;
+  const box=document.querySelector('#qualityTable'),score=document.querySelector('#qualityScore');
+  const confirm=document.querySelector('#ignoreWarnings'),start=document.querySelector('#startAnalysis'),refresh=document.querySelector('#refreshAnalysis');
+  if(confirm)confirm.disabled=!b||m2State.busy||m2State.offline||b.status!=='validated';
+  if(start)start.disabled=!b||m2State.busy||m2State.offline||b.status!=='confirmed'||!!m2State.analysis;
+  if(refresh)refresh.disabled=!b||m2State.busy||m2State.offline||b.status!=='confirmed'||!m2State.analysis;
+  if(score){score.textContent=q?`有效率 ${q.validRate}%`:'待检查';score.className=`quality-score ${q?.invalidRows?'warn':q?'good':''}`}
+  const status=m2State.busy?(m2State.phase||'正在处理请求…'):m2State.error||(!b?'尚未导入本班级数据':`${m2State.analysis?'研判完成':b.status==='confirmed'?'已确认':'待教师确认'} · ${q.totalRows} 行 / 有效 ${q.validRows} / 排除 ${q.invalidRows} / 警告 ${q.warningRows}`);
+  setText('#qualitySummary',status);
+  if(box){
+    if(!q){box.className='quality-empty';box.innerHTML=`<span>◎</span><b>${m2State.offline?'本地服务不可用':'尚未导入数据'}</b><p>${esc(m2State.error||'请选择 CSV / JSON，或载入合成演示数据。')}</p>`}
+    else{
+      box.className='quality-result';
+      const issues=m2State.issues||[],preview=m2State.preview||[];
+      box.innerHTML=`<div class="quality-file"><span>${esc(b?.file.format?.toUpperCase()||'检查')}</span><div><b>${esc(b?.file.name||'本次文件')}</b><small>批次 ${esc(b?.batchId||'未保存')} · 总 ${q.totalRows} / 有效 ${q.validRows} / 排除 ${q.invalidRows} / 重复 ${q.duplicateRows} / 警告行 ${q.warningRows}</small></div></div>
+      <div class="m2-scroll"><table><thead><tr><th>行号</th><th>字段</th><th>类型</th><th>级别</th><th>问题</th></tr></thead><tbody>${issues.length?issues.slice(0,50).map(x=>`<tr><td>${x.rowNumber?`第 ${x.rowNumber} 行`:'文件'}</td><td>${esc(x.field)}</td><td>${esc(x.type)}</td><td><span class="check ${x.severity==='blocking'?'warn':'good'}">${x.severity==='blocking'?'阻断':'警告'}</span></td><td>${esc(x.message)}</td></tr>`).join(''):'<tr><td colspan="5">未发现数据质量问题</td></tr>'}</tbody></table></div>
+      ${issues.length>50?`<p class="m2-hint">页面显示前 50 项；本批共 ${q.blockingIssueCount+q.warningIssueCount} 项，最多保存 500 项明细。</p>`:''}
+      ${preview.length?`<details class="m2-preview"><summary>查看匿名数据预览（前 ${preview.length} 行）</summary><div class="m2-scroll"><table><thead><tr><th>行号</th><th>匿名编号</th><th>知识点</th><th>得分</th><th>状态</th></tr></thead><tbody>${preview.map(x=>`<tr><td>第 ${x.rowNumber} 行</td><td>${esc(x.anonymousId||'—')}</td><td>${esc(x.knowledgePoint||'—')}</td><td>${x.score??'—'}</td><td>${x.isValid?'有效':'排除'}</td></tr>`).join('')}</tbody></table></div></details>`:''}`;
+    }
+  }
+  if(m2State.analysis){renderM2Analysis();if(m2State.error)setText('#skillStatus','上次研判结果 · 本次请求失败')}
+  else setText('#skillStatus',m2State.offline?'本地服务不可用 · 演示快照':b?.status==='confirmed'?'数据已确认 · 待研判':'导入研判待运行');
+}
+async function restoreM2(key,token){const requestToken=m2RequestToken;try{const data=await m2Http(`/api/import/latest?context=${encodeURIComponent(key)}`);if(token!==m2Token||requestToken!==m2RequestToken)return;m2State.batch=data?.batch||null;m2State.issues=data?.issues||[];const run=data?.analysis;m2State.analysis=run?.status==='completed'&&m2State.batch?.status==='confirmed'&&run.batchId===m2State.batch.batchId&&run.context===key?run.result:null;m2State.analysisRunId=m2State.analysis?run.analysisRunId:null;m2State.error='';m2State.offline=false;renderM2State()}catch(error){if(token!==m2Token||requestToken!==m2RequestToken)return;m2State.error=error.message;m2State.offline=!!error.offline;renderM2State()}}
+function beginM2Read(){const requestToken=++m2RequestToken;m2State.batch=null;m2State.analysis=null;m2State.analysisRunId=null;m2State.issues=[];m2State.preview=[];m2State.qualityOverride=null;m2State.error='';m2State.busy=true;m2State.phase='正在读取文件…';resetM2Visuals();renderM2State();return requestToken}
+async function importM2(fileName,content,requestToken){const context=currentContextKey(),token=m2Token;if(requestToken!==m2RequestToken)return;if(!context){m2State.busy=false;m2State.error='请先选择数据库中的课程和班级';renderM2State();return}m2State.phase='正在服务端逐行质检…';renderM2State();try{const data=await m2Post('/api/import/validate',{context,fileName,content});if(token!==m2Token||requestToken!==m2RequestToken)return;m2State.batch=data.batch;m2State.issues=data.issues||[];m2State.preview=data.preview||[];m2State.qualityOverride=null;m2State.analysis=null;m2State.offline=false;renderAll();toast(`质检完成：有效 ${data.quality.validRows} 行，排除 ${data.quality.invalidRows} 行`)}catch(error){if(token!==m2Token||requestToken!==m2RequestToken)return;m2State.batch=null;m2State.analysis=null;m2State.issues=error.details?.issues||[];m2State.preview=[];m2State.qualityOverride=error.details?.quality||null;m2State.error=`${error.code?`${error.code}：`:''}${error.message}`;m2State.offline=!!error.offline;toast('导入未完成，请查看质检信息')}finally{if(token===m2Token&&requestToken===m2RequestToken){m2State.busy=false;m2State.phase='';renderM2State()}}}
+async function readM2File(file){const requestToken=beginM2Read();if(file.size>10*1024*1024){m2State.busy=false;m2State.error='IMPORT_FILE_TOO_LARGE：文件不得超过 10 MiB';renderM2State();return}try{const content=await file.text();if(requestToken===m2RequestToken)await importM2(file.name,content,requestToken)}catch(error){if(requestToken===m2RequestToken){m2State.busy=false;m2State.error=`文件读取失败：${error.message}`;renderM2State()}}}
+async function confirmM2(){const b=m2State.batch,token=m2Token,requestToken=m2RequestToken;if(!b||m2State.busy)return false;if(b.status!=='validated')return true;m2State.busy=true;m2State.phase='正在记录教师确认…';renderM2State();try{const data=await m2Post(`/api/import/${encodeURIComponent(b.batchId)}/confirm`,{context:m2State.context});if(token!==m2Token||requestToken!==m2RequestToken)return false;m2State.batch=data.batch;m2State.error='';return true}catch(error){if(token===m2Token&&requestToken===m2RequestToken){m2State.error=error.message;m2State.offline=!!error.offline}return false}finally{if(token===m2Token&&requestToken===m2RequestToken){m2State.busy=false;m2State.phase='';renderM2State()}}}
+async function analyzeM2(){const b=m2State.batch,token=m2Token,requestToken=m2RequestToken;if(m2State.busy)return;if(!b||b.status!=='confirmed'){toast('请先确认本批次质检结果');return}m2State.busy=true;m2State.phase='正在运行本地学情 Skill…';renderM2State();try{const data=await m2Post('/api/analyze',{context:m2State.context,batchId:b.batchId});if(token!==m2Token||requestToken!==m2RequestToken)return;m2State.analysis=data;m2State.analysisRunId=data._evidence?.analysisRunId||null;m2State.error='';m2State.offline=false;openView('analysis');toast('已按本批有效记录完成真实研判')}catch(error){if(token===m2Token&&requestToken===m2RequestToken){m2State.error=error.message;m2State.offline=!!error.offline;toast('研判失败，旧结论未被替换')}}finally{if(token===m2Token&&requestToken===m2RequestToken){m2State.busy=false;m2State.phase='';renderM2State()}}}
+document.querySelector('#loadSample')?.addEventListener('click',async()=>{const requestToken=beginM2Read();try{const response=await fetch('assets/samples/m2-learning-demo.csv');if(!response.ok)throw new Error('示例文件读取失败');const content=await response.text();if(requestToken===m2RequestToken)await importM2('m2-learning-demo.csv',content,requestToken)}catch(error){if(requestToken===m2RequestToken){m2State.busy=false;m2State.error=error.message;renderM2State();toast(error.message)}}});
+document.querySelector('#dataFile')?.addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;e.target.value='';await readM2File(f)});
+const uploadZone=document.querySelector('#uploadZone');uploadZone?.addEventListener('dragover',e=>{e.preventDefault();uploadZone.classList.add('dragging')});uploadZone?.addEventListener('dragleave',()=>uploadZone.classList.remove('dragging'));uploadZone?.addEventListener('drop',async e=>{e.preventDefault();uploadZone.classList.remove('dragging');const f=e.dataTransfer?.files?.[0];if(f)await readM2File(f)});
+document.querySelector('#downloadTemplate')?.addEventListener('click',()=>download('学情数据导入模板.csv','匿名编号,知识点,得分,完成时间\nS001,模型评估,78,2026-09-01','text/csv;charset=utf-8'));
+document.querySelector('#startAnalysis')?.addEventListener('click',analyzeM2);
+document.querySelector('#ignoreWarnings')?.addEventListener('click',async()=>{if(await confirmM2())toast('质检已确认，警告项保留；现在可以开始研判')});
 
-function questionHTML(q,teacher=false){return `<article class="item question-item"><div class="item-top"><div><div class="item-text">${esc(q.text)}</div><div class="meta">${new Date(q.created).toLocaleString('zh-CN')} · ${esc(q.source||'课程资料')}</div></div><span class="badge ${q.status==='done'?'done':''}">${q.status==='done'?'已回复':'待回复'}</span></div>${q.answer?`<div class="answer"><b>教师回复</b><br>${esc(q.answer)}</div>`:''}${teacher?`<div class="item-actions"><button class="iconbtn" onclick="toggleReply('${q.id}')">${q.answer?'修改回复':'回复学生'}</button></div><div class="reply" id="reply-${q.id}"><textarea placeholder="写下清晰、可执行的回复">${esc(q.answer||'')}</textarea><button class="btn primary sm" onclick="saveReply('${q.id}')">保存并同步</button></div>`:''}</article>`}
-window.toggleReply=id=>document.querySelector(`#reply-${id}`)?.classList.toggle('on');
-window.saveReply=id=>{const q=state.questions.find(x=>x.id===id),v=document.querySelector(`#reply-${id} textarea`)?.value.trim();if(!v){toast('请先填写回复');return}q.answer=v;q.status='done';saveState();toast('回复已同步到学生学习记录')};
-function renderInbox(){const qs=state.questions.filter(q=>q.courseId===state.activeCourse),pending=qs.filter(q=>q.status==='pending').length,filtered=qs.filter(q=>activeFilter==='all'||q.status===activeFilter);document.querySelectorAll('#pendingBadge').forEach(x=>x.textContent=pending);const pc=document.querySelector('#pendingCount');if(pc)pc.textContent=pending;const box=document.querySelector('#inboxList');if(box)box.innerHTML=filtered.length?filtered.map(q=>questionHTML(q,true)).join(''):empty('暂无相关问题','学生在课程答疑中提交的问题会出现在这里。');const ac=document.querySelector('#answeredCount');if(ac)ac.textContent=qs.filter(q=>q.status==='done').length}
-document.querySelectorAll('[data-filter]').forEach(x=>x.addEventListener('click',()=>{activeFilter=x.dataset.filter;document.querySelectorAll('[data-filter]').forEach(y=>y.classList.toggle('on',y===x));renderInbox()}));
+function renderInbox(){window.ZhixueQaClient?.renderInbox()}
+document.querySelectorAll('[data-filter]').forEach(x=>x.addEventListener('click',()=>{activeFilter=x.dataset.filter;document.querySelectorAll('[data-filter]').forEach(y=>y.classList.toggle('on',y===x));window.ZhixueQaClient?.setFilter(activeFilter)}));
 
-document.querySelector('#publishTasks')?.addEventListener('click',()=>{const vals=[['t1','taskA','拓展组'],['t2','taskB','提升组'],['t3','taskC','巩固组']];state.tasks=vals.map(([id,input,tier],i)=>({id:`published-${id}`,courseId:state.activeCourse,tier,title:document.querySelector(`#${input}`).value.trim().split(/[，。]/)[0]||'分层学习任务',detail:document.querySelector(`#${input}`).value.trim(),duration:['35 分钟','25 分钟','20 分钟'][i],done:false}));state.published=true;saveState();document.querySelector('#publishStatus').textContent='已发布';document.querySelector('#publishStatus').classList.add('done');toast('分层任务已发布到学生端')});
 document.querySelector('#copyAdvice')?.addEventListener('click',async()=>{const text=[...document.querySelectorAll('.recommend-grid p')].map(x=>x.textContent).join('\n');try{await navigator.clipboard.writeText(text);toast('教学建议已复制')}catch{toast('复制失败，请手动选择')}});
-document.querySelectorAll('[data-export]').forEach(x=>x.addEventListener('click',()=>{const kind=x.dataset.export,content={课程:course()?.name,班级:currentClass()?.name,导出时间:new Date().toLocaleString('zh-CN'),类型:kind,知识点掌握:knowledge,学生分层:{拓展组:8,提升组:17,巩固组:11},问题记录:state.questions};download(`智学双擎_${kind}.json`,JSON.stringify(content,null,2));toast('文件已导出')}));
+document.querySelectorAll('[data-export]').forEach(x=>x.addEventListener('click',async()=>{const kind=x.dataset.export,role=PAGE==='teacher'?'teacher':'student',context=role==='teacher'?currentContextKey():'student:S240101';try{const response=await fetch(`/api/export?role=${role}&context=${encodeURIComponent(context)}&kind=${encodeURIComponent(kind)}&format=json`);if(!response.ok)throw new Error('export unavailable');downloadBlob(`智学双擎_${kind}.json`,await response.blob());toast('脱敏文件已从本地服务导出')}catch{const content={课程:course()?.name,班级:currentClass()?.name,导出时间:new Date().toLocaleString('zh-CN'),类型:kind,知识点掌握:knowledge,学生分层:{拓展组:8,提升组:17,巩固组:11},问题记录:state.questions};download(`智学双擎_${kind}.json`,JSON.stringify(content,null,2));toast('本地服务不可用，已使用当前页面快照导出')}}));
 
 function renderStudentCourses(){const box=document.querySelector('#studentCourseGrid');if(!box)return;const joined=state.courses.filter(x=>state.joined.includes(x.id));box.innerHTML=joined.length?joined.map(c=>`<article class="card course"><div class="cover" style="--c1:${c.color};--c2:#36b5d0"><b>${esc(c.name)}</b><span>${c.classes.length} 个班级空间</span></div><div class="course-body"><div class="course-meta"><span>综合掌握度</span><span>${c.id==='ai'?'64%':'71%'}</span></div><div class="progress"><i style="width:${c.id==='ai'?64:71}%"></i></div><button class="btn sm" onclick="enterStudentCourse('${c.id}')">进入课程</button></div></article>`).join(''):empty('还没有课程','使用教师提供的邀请码加入课程。')}
-window.enterStudentCourse=id=>{state.activeCourse=id;state.activeClass=course()?.classes[0]?.id||'';saveState();openView('studentHome');toast('已进入课程')};
+window.enterStudentCourse=id=>{state.activeCourse=id;state.activeClass=course()?.classes[0]?.id||'';saveState();applyStudentCourse(id);openView('studentHome');toast('已进入课程')};
 document.querySelector('#showJoinCourse')?.addEventListener('click',()=>document.querySelector('#joinCoursePanel')?.classList.toggle('on'));
 document.querySelector('#joinCourse')?.addEventListener('click',()=>{const input=document.querySelector('#joinCode'),code=input.value.trim().toUpperCase(),c=state.courses.find(x=>x.code===code);if(!c){toast('未找到该邀请码，请向教师确认');return}if(!state.joined.includes(c.id))state.joined.push(c.id);state.activeCourse=c.id;state.activeClass=c.classes[0]?.id||'';input.value='';saveState();toast(`已加入《${c.name}》`)});
 
-function assistantAnswer(q){const ZT=window.ZhixueSkillTutor;if(ZT){const r=ZT.answer({student_question:q,course_name:course()?.name||'本课程',question_context:course()?.name||''});if(r&&r.answer_status==='已解答'){const refs=(r._refs||[]).join('、')||'课程资料';return {text:r.answer_content.replace(/\n/g,'\n').replace(/^## .*/m,'').trim()||r.answer_content,source:'Skill：course-ai-tutor · '+refs,skill:r.answer_status}}else if(r&&r.answer_status==='待人工处理'){return {text:r.answer_content,source:'Skill：course-ai-tutor · 资料不足，已记录待教师处理',skill:r.answer_status}}}const lower=q.toLowerCase();if(lower.includes('精确率')||lower.includes('召回率'))return {text:'选择指标要看错误代价：如果漏掉一个真正的正例代价更高（如疾病筛查），优先关注召回率；如果把负例误判为正例代价更高（如垃圾邮件误删重要邮件），优先关注精确率。两者需要综合时可使用 F1 值。',source:'《第 4 章 模型评估》22–24 页；课件“混淆矩阵与评价指标”第 16 页'};if(lower.includes('混淆矩阵'))return {text:'混淆矩阵把预测结果分为 TP、FP、FN、TN 四类。例如检测 100 封邮件，其中 20 封垃圾邮件：正确识别 16 封是 TP，漏掉 4 封是 FN；把 5 封正常邮件误判为垃圾邮件是 FP，其余 75 封是 TN。',source:'课件“混淆矩阵与评价指标”第 12–15 页；例题 4-2'};if(lower.includes('准确率'))return {text:'类别不平衡时，准确率可能掩盖问题。例如 100 个样本只有 2 个正例，模型全部预测为负例，准确率仍有 98%，但两个真正的正例一个也没找到。因此还要结合召回率、精确率或 F1 值。',source:'《第 4 章 模型评估》18–21 页'};return {text:'当前课程资料中没有足够内容直接支持这个问题。我已把问题记录到当前课程，你可以补充具体题目或等待教师回复。',source:'Skill：course-ai-tutor · 资料不足，已记录待教师处理'} }
-function addChat(role,content,source=''){const box=document.querySelector('#chatMessages');if(!box)return;const div=document.createElement('div');div.className=`chat ${role}`;div.innerHTML=`<span>${role==='ai'?'AI':'我'}</span><div><b>${role==='ai'?'课程学习助手':'我的问题'}</b><p>${esc(content)}</p>${source?`<button class="citation">依据：${esc(source)}</button>`:''}</div>`;box.appendChild(div);box.scrollTop=box.scrollHeight}
-function sendQuestion(){const input=document.querySelector('#askInput'),q=input?.value.trim();if(!q){toast('请先输入课程问题');return}addChat('user',q);input.value='';const pending={id:uid(),courseId:state.activeCourse,text:q,status:'pending',answer:'',created:new Date().toISOString(),source:'课程智能答疑'};state.questions.unshift(pending);saveState();setTimeout(()=>{const a=assistantAnswer(q);addChat('ai',a.text,a.source);toast('回答已生成，并附带课程资料依据')},350)}
-document.querySelector('#sendQuestion')?.addEventListener('click',sendQuestion);document.querySelector('#askInput')?.addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='Enter')sendQuestion()});document.querySelectorAll('[data-question]').forEach(x=>x.addEventListener('click',()=>{document.querySelector('#askInput').value=x.dataset.question;sendQuestion()}));
+document.querySelector('#sendQuestion')?.addEventListener('click',()=>window.ZhixueQaClient?.send());document.querySelector('#askInput')?.addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='Enter')window.ZhixueQaClient?.send()});
 
-function renderStudentTasks(){const tasks=state.tasks.filter(t=>t.courseId===state.activeCourse&&(!t.tier||t.tier==='巩固组')),done=tasks.filter(t=>t.done).length,rate=tasks.length?Math.round(done/tasks.length*100):0;const box=document.querySelector('#personalTaskList');if(box)box.innerHTML=tasks.length?tasks.map((t,i)=>`<article class="card personal-task ${t.done?'done':''}"><div class="task-number">${t.done?'✓':String(i+1).padStart(2,'0')}</div><div class="task-info"><span>${esc(t.tier||'专属任务')} · ${esc(t.duration||'20 分钟')}</span><h3>${esc(t.title)}</h3><p>${esc(t.detail)}</p><div class="task-tags"><i>课程资料支持</i><i>完成后反馈教师</i></div></div><button class="btn ${t.done?'':'primary'}" onclick="togglePersonalTask('${t.id}')">${t.done?'已完成':'标记完成'}</button></article>`).join(''):empty('教师尚未发布任务','发布后会自动出现在当前课程中。');const bar=document.querySelector('#studentTaskBar');if(bar)bar.style.width=rate+'%';const prog=document.querySelector('#studentProgress');if(prog)prog.textContent=rate+'%';const doneEl=document.querySelector('#taskDoneCount');if(doneEl)doneEl.textContent=done;const pending=document.querySelector('#studentPendingTasks');if(pending)pending.textContent=Math.max(0,tasks.length-done);const badge=document.querySelector('#taskBadge');if(badge)badge.textContent=Math.max(0,tasks.length-done)}
-window.togglePersonalTask=id=>{const t=state.tasks.find(x=>x.id===id);if(t)t.done=!t.done;saveState();toast(t.done?'任务完成，结果已加入学习反馈':'任务已恢复为待完成')};
-function renderTimeline(){const box=document.querySelector('#learningTimeline');if(!box)return;const done=state.tasks.filter(t=>t.done);const items=[...done.map(t=>({title:`完成任务：${t.title}`,desc:'任务结果已计入当前课程画像'})),...state.questions.slice(0,3).map(q=>({title:`提交问题：${q.text}`,desc:q.status==='done'?'已获得教师回复':'已记录，等待教师回复'}))];box.innerHTML=items.length?items.map((x,i)=>`<div><i class="${i===0?'active':''}"></i><b>${esc(x.title)}</b><p>${esc(x.desc)}</p></div>`).join(''):empty('暂无学习记录','完成任务或提交问题后会自动记录。')}
+function renderStudentTasks(){window.ZhixueTaskClient?.renderStudentTasks()}
+function renderTimeline(){window.ZhixueQaClient?.renderStudentHistory([]);window.ZhixueTaskClient?.renderStudentHistory()}
 document.querySelector('#exportStudentData')?.addEventListener('click',()=>{download('智学双擎_个人学习记录.json',JSON.stringify({课程:course()?.name,掌握画像:studentKnowledge,任务:state.tasks,问题:state.questions},null,2));toast('学习记录已导出')});
 
 function renderAll(){fillMastery();renderCourseSelectors();renderTeacherCourses();renderStudentCourses();renderInbox();renderStudentTasks();renderTimeline()}
+document.querySelector('#refreshAnalysis')?.addEventListener('click',analyzeM2);
 
-// —— Skill 接入：将学情研判结果渲染到“学情智能研判”视图 ——
-function renderSkillAnalysis(report){
-  if(!report||report.ask_clarification){toast('Skill 需要完善成绩与知识点数据');return}
-  const os=report.overall_summary,st=report.student_stratification,ts=report.teaching_suggestions,ka=report.knowledge_analysis||[];
-  const set=(sel,v)=>{const el=document.querySelector(sel);if(el&&v!==undefined&&v!==null)el.textContent=v};
-  set('#classAverage',os.average_score);set('#classPassRate',os.pass_rate);
-  const att=document.querySelector('#classAttendance');if(att)att.textContent=(88+Math.round(Math.random()*6))+'%';
-  const rc=document.querySelector('#classRiskCount');if(rc)rc.textContent=Math.max(1,Math.round(os.total_students*0.1));
-  // 知识点排行：优先用 Skill 的分析结果
-  if(ka.length&&window.ZhixueSkillAnalyzer){knowledge=ka.map(k=>({name:k.knowledge_point,value:parseFloat(k.mastery_rate),color:'#5f7df4'}))}
-  fillMastery();
-  // 分层
-  const tot=st.excellent_students.length+st.potential_students.length+st.struggling_students.length||os.total_students;
-  set('#tierTotal',tot);set('#tierA',st.excellent_students.length);set('#tierB',st.potential_students.length);set('#tierC',st.struggling_students.length);
-  // 教学建议
-  const rec=document.querySelector('.recommend-grid');
-  if(rec&&ts&&ts.class_universal&&ts.class_universal.length){
-    const heads=['课前补偿','课堂调整','课后验证'];
-    rec.innerHTML=ts.class_universal.slice(0,3).map((t,i)=>`<div><b>${heads[i]||('建议'+(i+1))}</b><p>${esc(t)}</p></div>`).join('');
-  }
-  // 更新“结论依据”
-  const note=document.querySelector('.evidence-note');
-  if(note&&os&&note.querySelector('b'))note.querySelector('b').textContent='Skill 结论依据';
-  toast('已通过 Skill「academic-performance-analyzer」重新研判');
-}
-
-// —— Skill 接入：在答疑页展示已接入的 Skill 清单 ——
-function renderSkillStatus(){
-  const reg=window.ZhixueSkillRegistry;if(!reg)return;
-  // 首页：Skill 系统能力区
-  const grid=document.querySelector('#skillGrid');
-  if(grid&&PAGE==='home'){
-    const snap=reg.snapshot();
-    const statusEl=document.querySelector('#skillStatus');
-    if(statusEl)statusEl.textContent=snap.skill_count+' 个 Skill 已接入 · '+snap.engine;
-    const icons={'academic-performance-analyzer':'◫','course-ai-tutor':'✦','classroom-interaction-generator':'▥','course-content-optimizer':'⟳','teacher-answer-manager':'◈'};
-    grid.innerHTML=snap.skills.map((s,i)=>`<article class="card panel"><span class="skill-icon">${icons[s.skill_id]||('0'+(i+1))}</span><h3>${esc(s.label)}</h3><p>${esc(s.description)}</p><span class="skill-ver">${esc(s.engine)} · ${s.status==='ready'?'已接入':'待接入'}</span></article>`).join('');
-    return;
-  }
-  const sourcePanel=document.querySelector('.source-panel .source-list');
-  if(sourcePanel&&PAGE==='student'){
-    const skills=reg.snapshot().skills;
-    sourcePanel.innerHTML=skills.map(s=>`<button title="${esc(s.description)}"><span>Skill</span><b>${esc(s.label)}</b><small>${esc(s.engine)} · ${esc(s.status)}</small></button>`).join('')+`<button title="Skill 系统总控"><span>+</span><b>${reg.snapshot().skill_count} 个 Skill 已接入</b><small>OpenClaw / 帝王蟹引擎</small></button>`;
-  }
-}
-
-document.querySelector('#refreshAnalysis')?.addEventListener('click',()=>{
-  if(window.ZhixueSkillAnalyzer){
-    const report=window.ZhixueSkillAnalyzer.fromState(knowledge,currentClass()?.students||36);
-    renderSkillAnalysis(report);
-  }else{
-    toast('已使用当前确认数据重新生成研判结果');
-    document.querySelector('#knowledgeAnalysis')?.classList.add('flash');setTimeout(()=>document.querySelector('#knowledgeAnalysis')?.classList.remove('flash'),650);
-  }
-});
-renderSkillStatus();
-
-function visualEffects(){
-  const c=document.querySelector('#particles');if(!c)return;
-  const ctx=c.getContext('2d'),reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const pointer={x:innerWidth/2,y:innerHeight*.34,active:false};
-  let w=0,h=0,dpr=1,points=[],raf=0;
-  function size(){
-    w=innerWidth;h=innerHeight;dpr=Math.min(devicePixelRatio||1,2);
-    c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);c.style.width=w+'px';c.style.height=h+'px';
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    const count=reduce?26:Math.min(105,Math.max(42,Math.floor(w/17)));
-    points=Array.from({length:count},()=>({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.24,vy:(Math.random()-.5)*.24,r:Math.random()*1.45+.35,a:Math.random()*.35+.2,phase:Math.random()*Math.PI*2,hue:Math.random()>.76?'167,132,255':'91,187,255'}));
-  }
-  function move(e){
-    pointer.x=e.clientX;pointer.y=e.clientY;pointer.active=true;
-    document.body.style.setProperty('--mouse-x',pointer.x+'px');document.body.style.setProperty('--mouse-y',pointer.y+'px');
-    const target=e.target.closest?.('.card,.role-card,.login-card,.skill-zone,.process-banner');
-    if(target){const r=target.getBoundingClientRect();target.style.setProperty('--spot-x',(pointer.x-r.left)+'px');target.style.setProperty('--spot-y',(pointer.y-r.top)+'px')}
-  }
-  function draw(time=0){
-    ctx.clearRect(0,0,w,h);
-    for(let i=0;i<points.length;i++){
-      const p=points[i];
-      if(!reduce){p.x+=p.vx;p.y+=p.vy;if(p.x<-8||p.x>w+8)p.vx*=-1;if(p.y<-8||p.y>h+8)p.vy*=-1}
-      if(pointer.active&&!reduce){const dx=p.x-pointer.x,dy=p.y-pointer.y,d=Math.hypot(dx,dy)||1;if(d<175){const push=(175-d)/175*.009;p.vx+=dx/d*push;p.vy+=dy/d*push;p.vx*=.994;p.vy*=.994}}
-      const alpha=p.a*(.72+.28*Math.sin(time*.0012+p.phase));
-      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=`rgba(${p.hue},${alpha})`;ctx.fill();
-      for(let j=i+1;j<points.length;j++){const q=points[j],dx=p.x-q.x,dy=p.y-q.y,dist2=dx*dx+dy*dy;if(dist2<9600){const line=.115*(1-Math.sqrt(dist2)/98);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.strokeStyle=`rgba(93,169,255,${line})`;ctx.lineWidth=.55;ctx.stroke()}}
-    }
-    if(pointer.active){const glow=ctx.createRadialGradient(pointer.x,pointer.y,0,pointer.x,pointer.y,115);glow.addColorStop(0,'rgba(112,222,255,.10)');glow.addColorStop(1,'rgba(97,127,255,0)');ctx.fillStyle=glow;ctx.fillRect(pointer.x-115,pointer.y-115,230,230)}
-    if(!reduce)raf=requestAnimationFrame(draw);
-  }
-  addEventListener('pointermove',move,{passive:true});addEventListener('pointerleave',()=>pointer.active=false);addEventListener('resize',size,{passive:true});
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!reduce&&!raf)raf=requestAnimationFrame(draw)});
-  size();draw();
-}
-visualEffects();renderAll();loadFrontendDatabase();
-
-// —— Skill 接入：课程内容智能迭代（teacher 端 analysis 视图） ——
-function mountCourseIterationFeature(){
-  if(PAGE!=='teacher')return;
-  const anchor=document.querySelector('.recommend-grid');
-  if(!anchor)return;
-  const host=anchor.closest('.panel');
-  if(!host||document.querySelector('#courseIterationPanel'))return;
-  const panel=document.createElement('article');
-  panel.className='card panel iteration-panel';
-  panel.id='courseIterationPanel';
-  panel.innerHTML=`<div class="card-head"><div><h3>课程内容智能迭代</h3><small>由 Skill「course-content-optimizer」基于薄弱知识点生成内容优化方案</small></div><button class="btn primary sm" id="runCourseIteration">⟳ 生成课程迭代方案</button></div><div class="iteration-summary" id="iterationSummary"><div class="hint">点击按钮，系统将基于「模型评估」等薄弱知识点自动生成章节调整、案例更新与考核建议。</div></div><div id="iterationBody" class="iteration-body"></div>`;
-  host.after(panel);
-  document.querySelector('#runCourseIteration').addEventListener('click',()=>{
-    const opt=window.ZhixueSkillContentOptimizer;if(!opt){toast('Skill 未加载');return}
-    const weak=(knowledge||[]).map(k=>({name:k.name||'知识点',mastery_rate:parseFloat(k.value)||50}));
-    const res=opt.optimize({course_name:course()?.name||'本课程',current_outline:'当前课程各章节大纲',weak_knowledge:weak,student_feedback:state.questions.slice(0,5).map(q=>({content:q.text}))});
-    if(res.ask_clarification){toast(res.ask_clarification[0]||'需要更多迭代依据');return}
-    const escT=t=>{const m={'&':'&amp;','<':'&lt;','>':'&gt;'};return String(t).replace(/[&<>]/g,c=>m[c])};
-    document.querySelector('#iterationSummary').innerHTML=`<div class="iter-note"><b>迭代结论</b>&nbsp;${escT(res.iteration_summary)}</div>`;
-    const body=document.querySelector('#iterationBody');
-    body.innerHTML=`
-      <div class="iter-block"><b>内容调整</b><div class="iter-rows">${res.content_changes.map(c=>`<div><i class="p-${c.priority==='高'?'h':c.priority==='中'?'m':'l'}">${escT(c.priority)}</i><span>${escT(c.knowledge_point)}（掌握率 ${c.current_mastery}%）</span><small>${escT(c.adjustment)}</small></div>`).join('')}</div></div>
-      <div class="iter-block"><b>章节调整</b><ul>${res.chapter_adjustments.map(c=>`<li><span>${escT(c.chapter)}</span><small>${escT(c.adjustment)}　—　${escT(c.reason)}</small></li>`).join('')}</ul></div>
-      <div class="iter-block"><b>案例更新</b><ul>${res.case_updates.map(c=>`<li><span>${escT(c.topic)}</span><small>${escT(c.proposed_case)}</small></li>`).join('')}</ul></div>
-      <div class="iter-block"><b>考核调整</b><ul>${res.assessment_updates.map(c=>`<li><span>${escT(c.type)}</span><small>${escT(c.change)}</small></li>`).join('')}</ul></div>
-      <div class="iter-block iter-plan"><b>落地计划</b><div class="iter-rows">${res.implementation_plan.map(p=>`<div><i>${p.step}</i><span>${escT(p.action)}</span><small>${escT(p.timeline)}</small></div>`).join('')}</div></div>`;
-    toast('已通过 Skill「course-content-optimizer」生成课程迭代方案');
-  });
-}
-
-// —— Skill 接入：课后答疑智能管理（teacher 端 inbox 视图） ——
-function mountAnswerManagerFeature(){
-  if(PAGE!=='teacher')return;
-  const host=document.querySelector('#databaseHotTopics')?.closest('.panel');
-  if(!host||document.querySelector('#answerManagerPanel'))return;
-  const panel=document.createElement('article');
-  panel.className='card panel answer-mgr-panel';
-  panel.id='answerManagerPanel';
-  panel.innerHTML=`<div class="card-head"><div><h3>答疑智能整理</h3><small>由 Skill「teacher-answer-manager」聚合高频问题并生成统一解答</small></div><button class="btn primary sm" id="runAnswerManager">◈ AI 智能整理答疑</button></div><div class="am-note" id="amNote"><div class="hint">点击按钮，将当前课程的学生提问聚合为高频主题，自动生成统一解答、FAQ 与待重点辅导名单。</div></div><div id="amBody" class="am-body"></div>`;
-  host.after(panel);
-  document.querySelector('#runAnswerManager').addEventListener('click',()=>{
-    const am=window.ZhixueSkillAnswerManager;if(!am){toast('Skill 未加载');return}
-    const qs=state.questions.filter(q=>q.courseId===state.activeCourse).map(q=>({student:q.student||'匿名',question:q.text,status:q.status}));
-    const res=am.analyze({course_name:course()?.name||'本课程',questions:qs});
-    if(res.ask_clarification){toast(res.ask_clarification[0]||'暂无学生提问');return}
-    const escT=t=>{const m={'&':'&amp;','<':'&lt;','>':'&gt;'};return String(t).replace(/[&<>]/g,c=>m[c])};
-    document.querySelector('#amNote').innerHTML=`<div class="iter-note"><b>处理结论</b>&nbsp;${escT(res.summary)}</div>`;
-    const body=document.querySelector('#amBody');
-    body.innerHTML=`
-      <div class="iter-block"><b>高频主题</b><div class="iter-rows">${res.aggregate.map(g=>`<div><i>${g.question_count}</i><span>${escT(g.topic)}</span><small>${g.students.map(s=>escT(s)).join('、')}</small></div>`).join('')}</div></div>
-      <div class="iter-block"><b>统一解答</b><ul>${res.unified_answers.map(u=>`<li><span>${escT(u.topic)}</span><small>${escT(u.answer)}</small></li>`).join('')}</ul></div>
-      <div class="iter-block"><b>FAQ 更新</b><ul>${res.faq_updates.map(f=>`<li><span>${escT(f.action)}</span><small>${escT(f.question)}</small></li>`).join('')}</ul></div>
-      ${res.remedial_targets.length?`<div class="iter-block"><b>待重点辅导</b><ul>${res.remedial_targets.map(t=>`<li><span>${escT(t.student)}</span><small>${escT(t.weakness)}　—　${escT(t.action)}</small></li>`).join('')}</ul></div>`:''}`;
-    toast('已通过 Skill「teacher-answer-manager」完成答疑智能整理');
-  });
-}
-mountCourseIterationFeature();mountAnswerManagerFeature();
+function particles(){const c=document.querySelector('#particles');if(!c)return;const ctx=c.getContext('2d');let w,h,points;function size(){w=c.width=innerWidth;h=c.height=innerHeight;points=Array.from({length:Math.min(70,Math.floor(w/22))},()=>({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.18,vy:(Math.random()-.5)*.18,r:Math.random()*1.3+.35}))}function frame(){ctx.clearRect(0,0,w,h);points.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>w)p.vx*=-1;if(p.y<0||p.y>h)p.vy*=-1;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle='rgba(112,170,255,.42)';ctx.fill()});requestAnimationFrame(frame)}size();frame();addEventListener('resize',size)}
+particles();renderAll();loadFrontendDatabase();

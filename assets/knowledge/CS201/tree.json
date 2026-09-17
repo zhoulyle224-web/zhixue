@@ -1,0 +1,4 @@
+{
+  "resourceId": "CS201-tree-v1", "dbResourceId": 3, "courseCode": "CS201", "courseName": "数据结构", "resourceType": "实验指导", "title": "树与二叉树遍历", "chapter": "第3章 树", "version": "demo-2026.09", "synthetic": true, "sourceLabel": "合成演示课程资料",
+  "sections": [{"chunkId":"cs201-tree-01","locator":"§3.2 二叉树的前序遍历","tags":["二叉树","前序遍历","根左右","树"],"text":"二叉树的前序遍历顺序是先访问根结点，再递归遍历左子树，最后递归遍历右子树，即根—左—右。若根为 A，左孩子为 B，右孩子为 C，则前序序列为 A、B、C。","method":"在每个子树重复根—左—右，先记录当前根，再进入左子树，最后进入右子树。","summary":"前序遍历的核心是每层都先访问根结点。","guideQuestions":["如果左子树还有两个孩子，前序遍历应先访问谁？","前序与中序遍历的根结点访问时机有何不同？"]}]
+}

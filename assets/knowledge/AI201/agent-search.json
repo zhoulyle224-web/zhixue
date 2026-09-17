@@ -1,0 +1,4 @@
+{
+  "resourceId": "AI201-agent-search-v1", "dbResourceId": 19, "courseCode": "AI201", "courseName": "人工智能导论", "resourceType": "课件", "title": "智能体与搜索", "chapter": "第1章 智能体与问题求解", "version": "demo-2026.09", "synthetic": true, "sourceLabel": "合成演示课程资料",
+  "sections": [{"chunkId":"ai201-agent-01","locator":"§1.1 智能体与环境","tags":["智能体","感知","行动","环境"],"text":"智能体通过传感器感知环境，并通过执行器采取行动。智能体的决策可依据当前感知及已有状态，目标是在给定任务环境中选择合适行动。","method":"说明输入是环境感知、输出是行动，再结合任务目标解释为何选择该行动。","summary":"智能体是能感知并行动的系统。","guideQuestions":["智能体的感知和行动分别对应什么？","同一感知在不同任务目标下会导致相同行动吗？"]},{"chunkId":"ai201-search-02","locator":"§1.3 启发式搜索与 A*","tags":["A*","f(n)","g(n)","h(n)","启发式搜索","无信息搜索"],"text":"A* 搜索用 f(n)=g(n)+h(n) 评价结点 n：g(n) 是从起点到 n 的已知路径代价，h(n) 是从 n 到目标的估计剩余代价。启发式搜索利用 h(n) 引导扩展；无信息搜索不利用这种目标距离估计。","method":"先分别确定已发生代价 g(n) 和估计剩余代价 h(n)，相加得到 f(n)，再比较候选结点的评价值。","summary":"A* 将已知路径代价与启发式估计合并。","guideQuestions":["g(n) 与 h(n) 各表示哪段代价？","没有启发式信息时，搜索如何选择扩展结点？"]}]
+}

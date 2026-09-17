@@ -1,15 +1,17 @@
 {
-  "name": "site-creator-vinext-starter",
-  "version": "0.1.0",
+  "name": "zhixue-dual-engine",
+  "version": "0.2.0",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext dev",
+    "dev": "node server/local-api.mjs --port 4173",
+    "start": "node server/local-api.mjs --port 8080",
     "build": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext build",
-    "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
-    "test": "npm run build && node --test tests/rendered-html.test.mjs",
+    "build:static": "node scripts/build-static-site.mjs",
+    "test": "node --test tests/local-api.test.mjs tests/pages.test.mjs tests/m2-import-analysis.test.mjs tests/m25-analysis-contract.test.mjs tests/m1-course-qa.test.mjs tests/m3-task-loop.test.mjs && node scripts/verify-skills.cjs",
+    "test:skills": "node scripts/verify-skills.cjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
     "build:demo": "node scripts/build-static-site.mjs"

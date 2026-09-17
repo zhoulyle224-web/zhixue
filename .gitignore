@@ -38,3 +38,12 @@ yarn-error.log*
 /.wrangler/
 /outputs/
 /work/
+
+# 本地运行数据
+/data/runtime/*.jsonl
+/data/runtime/*.log
+/data/runtime/*.sqlite
+/data/runtime/*.sqlite-wal
+/data/runtime/*.sqlite-shm
+/data/runtime/server.json
+/backups/

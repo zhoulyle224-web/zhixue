@@ -1,0 +1,4 @@
+{
+  "resourceId": "CS201-linear-list-v1", "dbResourceId": 1, "courseCode": "CS201", "courseName": "数据结构", "resourceType": "课件", "title": "线性表与复杂度", "chapter": "第1章 线性结构", "version": "demo-2026.09", "synthetic": true, "sourceLabel": "合成演示课程资料",
+  "sections": [{"chunkId":"cs201-linear-01","locator":"§1.1 线性表及时间复杂度","tags":["线性表","顺序表","链表","时间复杂度"],"text":"线性表中的元素呈一对一的线性关系。顺序表用连续存储空间，按下标访问通常为 O(1)，中间插入或删除通常需移动元素，为 O(n)。链表通过链接连接结点，已知目标结点位置时插入可为 O(1)，按位置查找仍需遍历，为 O(n)。","method":"先区分操作是按下标访问、查找还是已定位后的插入，再结合存储结构判断代价。","summary":"顺序表利于随机访问，链表利于已定位位置的插入。","guideQuestions":["为什么顺序表在中间插入可能需要移动元素？","链表按位置查找为什么仍是 O(n)？"]}]
+}

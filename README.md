@@ -1,102 +1,131 @@
-# vinext-starter
+# 智学双擎
 
-> 本项目的后续开发须先阅读 [Agent 工作约束](./智学双擎_下一阶段模块拆分与Agent工作约束_20260916.md)；编码 Agent 另见 [AGENTS.md](./AGENTS.md)。每次操作前重新核对工作约束。
+面向教师教学与学生学习双端场景的本地智能辅助 MVP，核心闭环为：
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+```text
+课后即时答疑 -> 高频问题沉淀 -> 学情智能研判 -> 教师确认 -> 个性化任务反馈
+```
 
-## Prerequisites
+项目聚焦两个稳定、可演示、可落地的核心场景：
 
-- Node.js `>=22.13.0`
+- 学生课后即时答疑：基于课程资料回答并附引用，资料不足自动转教师。
+- 教师学情智能研判：导入匿名数据、质检、计算画像、分层和教学建议。
 
-## Quick Start
+## 核心特性
+
+- 本地优先：Node.js 内置 HTTP 与 SQLite 能力，无需外网和 npm 安装。
+- 标准化 Skill：五个教育 Skill 具有明确输入、输出和异常契约。
+- 教师确认：智能体只生成建议和草案，不自动发布高风险动作。
+- 数据安全：数据库只读、页面白名单、导出脱敏、水印和 JSONL 审计。
+- 异常降级：模型或 API 不可用时回到本地规则 Skill 和同源快照。
+- 一键运行：支持 Windows、Linux 和 Docker Compose。
+
+## 快速启动
+
+环境要求：Node.js 22.13 或更高版本。
+
+最简单的 Windows 一键部署方式：
+
+```text
+双击项目根目录的“deploy-and-open.bat”或“一键部署并打开.bat”
+```
+
+脚本会自动选择可用端口、后台启动服务并打开默认浏览器。
+
+Windows：
+
+```powershell
+.\scripts\start-zhixue.ps1
+```
+
+Linux：
 
 ```bash
-npm install
-npm run dev
-npm run build
+chmod +x scripts/start-zhixue.sh
+./scripts/start-zhixue.sh
 ```
 
-This starter does not use `wrangler.jsonc`.
+Docker：
 
-## Included Shape
-
-- edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
-
-## Workspace Auth Headers
-
-Signed-in visitors receive both `oai-authenticated-user-id` and `oai-authenticated-user-email`. Private Sites require every visitor to sign in; public Sites may also have anonymous visitors, for whom neither header is present.
-
-The user ID is stable for the same user on the same Site and different across Sites. Email and name are intended for display or contact purposes.
-
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
-
-Treat the full name as optional and fall back to email when it is absent:
-
-```tsx
-import { headers } from "next/headers";
-
-export default async function Home() {
-  const requestHeaders = await headers();
-  const userId = requestHeaders.get("oai-authenticated-user-id");
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
-
-  const displayName = fullName ?? email;
-  // ...
-}
+```bash
+docker compose up -d --build
 ```
 
-## Optional Dispatch-Owned ChatGPT Sign-In
+打开 [http://127.0.0.1:8080](http://127.0.0.1:8080)。
 
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
+## 演示账号
 
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
+| 角色 | 账号 | 密码 |
+|---|---|---|
+| 教师 | `teacher2026` | `demo123` |
+| 学生 | `student2026` | `demo123` |
 
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
+演示身份只用于功能验收，生产环境必须接入校方统一身份认证。
 
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
+## 测试
 
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
+```bash
+npm test
+```
 
-## Useful Commands
+测试覆盖：
 
-- `npm run dev`: start local development
-- `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
-- `npm run db:generate`: generate Drizzle migrations after schema changes
+- 5 个 Skill、26 项契约用例。
+- 9 项本地 API、导出、安全和页面集成用例。
+- 数据库静态暴露、越权导出、提示注入、PII 脱敏用例。
 
-## Learn More
+单独核验 Skill：
 
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+```bash
+node scripts/verify-skills.cjs
+```
+
+## 目录
+
+```text
+assets/                 页面、样式、读模型和五个 Skill
+server/                 本地 API、Skill 运行时、导出与审计
+data/                   匿名 SQLite 数据和运行时审计
+openclaw/               Agent/Workflow/Tool/Memory/Guardrails 配置
+prompts/                系统、任务、工具、拒答与脱敏提示词
+docs/                   参赛方案、部署、测试、视频和 PPT 材料
+scripts/                Windows/Linux 启动和备份脚本
+tests/                  本地 API 与页面集成测试
+```
+
+## 关键接口
+
+| 接口 | 方法 | 用途 |
+|---|---|---|
+| `/api/health` | GET | 检查 SQLite、Skill 和本地运行状态 |
+| `/api/catalog` | GET | 获取课程与班级目录 |
+| `/api/dashboard` | GET | 获取教师或学生脱敏看板 |
+| `/api/qa` | POST | 调用课程答疑 Skill |
+| `/api/import/validate` | POST | 导入 CSV/JSON 并执行逐行质检 |
+| `/api/import/:batchId/confirm` | POST | 幂等确认已质检批次 |
+| `/api/analyze` | POST | 直接分数模式调用 Skill；批次模式每次生成独立 `analysisRunId` |
+| `/api/analysis/:analysisRunId?context=teacher:...` | GET | 按固定 ID 读取已完成研判及来源证据 |
+| `/api/import/latest?context=teacher:...` | GET | 仅供教师页面恢复最近批次，不作为任务来源 |
+| `/api/export` | GET | 鉴权、脱敏、水印和导出 |
+| `/api/skills` | GET | 获取 Skill 注册状态 |
+
+## 文档导航
+
+- [完整参赛优化方案](docs/参赛优化方案.md)
+- [部署手册](docs/部署手册.md)
+- [测试用例](docs/测试用例.md)
+- [演示视频脚本](docs/演示视频脚本.md)
+- [PPT 大纲](docs/PPT大纲.md)
+- [评分自评表](docs/评分自评表.md)
+- [M2.5 修改与验收报告](M2.5_修改与验收报告_20260917.md)
+- [OpenClaw 适配](openclaw/README.md)
+- [提示词版本管理](prompts/README.md)
+
+## 项目边界
+
+- 当前课程答疑使用可解释的关键词检索，进阶方案为 SQLite FTS5 加本地向量重排。
+- 当前模型为可选能力，没有模型时规则 Skill 可完整演示主流程。
+- 当前登录为演示认证，生产版需接 CAS、OAuth2 或校方统一身份认证。
+- M2.5 的 `context` 仅用于本地班级隔离，不等同于服务端身份授权；M4 服务端鉴权尚未实现。M3 后续必须固定 `sourceAnalysisRunId` 与 `sourceBatchId`，不可引用动态 `latest`。
+- 当前数据为匿名合成数据，真实数据必须经过校内授权、分级分类和脱敏。
+- PDF 导出使用本地打印页另存，避免引入重型 PDF 字体依赖。
