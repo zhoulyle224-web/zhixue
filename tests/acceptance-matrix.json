@@ -3671,7 +3671,7 @@
       "method": "manual",
       "severity": "blocking",
       "sourceRequirement": "REQ-M6 §177",
-      "coverageStatus": "尚未实现",
+      "coverageStatus": "人工已验证",
       "testFiles": [],
       "testNames": [],
       "fixture": "dedicated manual runtime SQLite and two independent browser sessions",

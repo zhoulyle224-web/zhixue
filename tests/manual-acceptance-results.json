@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "verifiedAt": "2026-09-17T23:21:19.6485751+08:00",
+  "verifiedAt": "2026-09-18T00:12:23.6593841+08:00",
   "runtime": {
-    "port": 4316,
-    "database": "tests/.tmp/m6-manual.sqlite",
+    "port": 4174,
+    "database": "系统临时目录/zhixue-m6-manual-20260918.sqlite",
     "browserBackend": "Codex in-app browser",
-    "sessionIsolation": "127.0.0.1 与 localhost 两个 Origin 隔离 Cookie；不是两个独立浏览器 Profile"
+    "sessionIsolation": "本轮两个 P0 复核使用同一 127.0.0.1 remember Session；既有双浏览器 blocked 项未改动"
   },
   "results": [
     {
@@ -98,14 +98,14 @@
     },
     {
       "id": "MANUAL-M5-01",
-      "result": "fail",
-      "verifiedAt": "2026-09-17T23:21:19.6485751+08:00",
-      "browserA": "Codex in-app browser / 教师与学生页",
+      "result": "blocked",
+      "verifiedAt": "2026-09-18T00:12:23.6593841+08:00",
+      "browserA": "Codex in-app browser / 127.0.0.1:4174 学生页；教师导出沿用上一轮证据",
       "browserB": "不适用",
-      "operation": "教师尝试报告 JSON、CSV、Excel 兼容 XML、打印页；学生尝试本人学习记录 JSON（全部课程与当前课程）。",
+      "operation": "重新验证学生本人学习记录 JSON 的当前课程与全部授权课程；按约束不重试、不修改 Print。",
       "expected": "四种正式导出和学生 learning-record 均由服务端受控生成。",
-      "actual": "教师 JSON、CSV、Excel 兼容 XML显示生成成功；打印页被浏览器弹窗策略阻止；学生两种范围均返回“当前身份无权导出该范围”。",
-      "notes": "打印和学生 learning-record 未通过，按真实页面结果记 fail。"
+      "actual": "学生当前课程与全部授权课程均显示受控文件已生成，并返回独立 exportId/watermark；上一轮教师 JSON、CSV、Excel 已通过。Print 仍受当前 IAB popup 策略阻止，未伪装为通过。",
+      "notes": "learning-record 缺陷已修复并人工通过；Print 子项留待正常 Chrome/Edge 复核，因此整项拆分后保持 blocked。"
     },
     {
       "id": "MANUAL-M5-02",
@@ -131,14 +131,14 @@
     },
     {
       "id": "MANUAL-M6-01",
-      "result": "fail",
-      "verifiedAt": "2026-09-17T23:21:19.6485751+08:00",
-      "browserA": "Codex in-app browser / 127.0.0.1 教师 Origin",
-      "browserB": "Codex in-app browser / localhost 学生 Origin",
-      "operation": "保持 tests/.tmp/m6-manual.sqlite，停止并重启服务；使用 remember Session 恢复页面，检查 QA、analysis、task history、completion。",
+      "result": "pass",
+      "verifiedAt": "2026-09-18T00:12:23.6593841+08:00",
+      "browserA": "Codex in-app browser / 127.0.0.1:4174 教师页",
+      "browserB": "不适用（本轮仅复核上一轮失败的 analysis 子项）",
+      "operation": "在临时 runtime SQLite 生成研判，记录 analysisRunId，停止并重启 Node 服务；使用原 remember Session 刷新并进入学情研判页，再切换班级并切回。",
       "expected": "Session 恢复且 QA/reply、analysis、task history、completion 全部仍可从页面读取。",
-      "actual": "Session/CSRF 恢复；QA/reply、v1 task history、1/10 completion 和反馈仍存在；学情研判页却显示当前班级尚未运行导入研判。",
-      "notes": "任务页仍保留 analysis 来源标识，但 analysis 页面未恢复当前研判，综合回归按 fail 记录。"
+      "actual": "重启后 Session 自动恢复；页面恢复同一 analysis_d7c8f0cd-de06-494c-9733-8635b42e768e、批次、平均分 68、及格率 70%、知识点、2/5/3 分层、建议与 evidence。切换无历史班级显示真实空状态，切回原班级恢复同一 ID，未新建研判。上一轮已通过的 QA/reply、task history、completion 证据继续有效。",
+      "notes": "上一轮唯一失败的 analysis 页面恢复子项已真实复核通过，MANUAL-M6-01 改为 pass。"
     }
   ]
 }
