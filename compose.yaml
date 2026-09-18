@@ -9,11 +9,15 @@ services:
       HOST: 0.0.0.0
       PORT: 8080
       NODE_ENV: production
+      ZHIXUE_DATA_DIR: /var/data
+      ZHIXUE_COOKIE_SECURE: 0
+      ZHIXUE_TRUST_PROXY: 0
+      ZHIXUE_SANDBOX_TTL_HOURS: 24
     read_only: true
     tmpfs:
       - /tmp
     volumes:
-      - zhixue-runtime:/app/data/runtime
+      - zhixue-runtime:/var/data
     security_opt:
       - no-new-privileges:true
     restart: unless-stopped

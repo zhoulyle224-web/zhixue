@@ -6,11 +6,12 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 
-const COOKIE_NAME = "zhixue_session";
+export const COOKIE_NAME = "zhixue_session";
 const SESSION_HOURS = 8;
 const REMEMBER_DAYS = 7;
 const ACCOUNT_RE = /^[a-z0-9_-]{1,64}$/;
-const TOKEN_RE = /^[A-Za-z0-9_-]{40,100}$/;
+const TOKEN_RE = /^(?:sbx_[a-f0-9]{32}\.)?[A-Za-z0-9_-]{40,100}$/;
+const SANDBOX_RE = /^sbx_[a-f0-9]{32}$/;
 
 export class AuthError extends Error {
   constructor(code, message, status = 401) {
@@ -34,6 +35,15 @@ function safeEqual(left, right) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+export function createSandboxId() {
+  return `sbx_${randomBytes(16).toString("hex")}`;
+}
+
+export function normalizeSandboxId(value) {
+  const candidate = String(value || "").trim().toLowerCase();
+  return SANDBOX_RE.test(candidate) ? candidate : null;
+}
+
 function cookieValue(header) {
   const pairs = String(header || "").split(";");
   for (const pair of pairs) {
@@ -45,12 +55,25 @@ function cookieValue(header) {
   return null;
 }
 
+export function sandboxIdFromRequest(request) {
+  const token = cookieValue(request?.headers?.cookie || request?.headers?.Cookie || "");
+  if (!token || !token.includes(".")) return null;
+  return normalizeSandboxId(token.slice(0, token.indexOf(".")));
+}
+
 function header(request, name) {
   return request.headers?.[name.toLowerCase()] || "";
 }
 
-export function createAuthService({ runtimeStore, baseDb, secureCookie = process.env.ZHIXUE_COOKIE_SECURE === "1" }) {
+export function createAuthService({
+  runtimeStore,
+  baseDb,
+  sandboxId = null,
+  secureCookie = process.env.ZHIXUE_COOKIE_SECURE === "1",
+  trustProxy = process.env.ZHIXUE_TRUST_PROXY === "1",
+}) {
   const db = runtimeStore.taskDatabase;
+  const normalizedSandboxId = normalizeSandboxId(sandboxId);
 
   function seed(accountName, role, actorRefId, actorRefCode) {
     const account = accountName.toLowerCase();
@@ -96,6 +119,7 @@ export function createAuthService({ runtimeStore, baseDb, secureCookie = process
         expiresAt: session.expiresAt,
         rememberLogin: session.rememberLogin,
       },
+      ...(normalizedSandboxId ? { sandbox: { id: normalizedSandboxId } } : {}),
     };
   }
 
@@ -131,7 +155,8 @@ export function createAuthService({ runtimeStore, baseDb, secureCookie = process
       throw new AuthError("AUTH_ROLE_MISMATCH", "该账号不能登录所选身份。", 403);
     }
     actor(row);
-    const token = randomBytes(32).toString("base64url");
+    const secretToken = randomBytes(32).toString("base64url");
+    const token = normalizedSandboxId ? `${normalizedSandboxId}.${secretToken}` : secretToken;
     const csrfToken = randomBytes(32).toString("base64url");
     const now = new Date();
     const expiresAt = new Date(now.getTime() + (rememberLogin ? REMEMBER_DAYS * 86400000 : SESSION_HOURS * 3600000));
@@ -200,7 +225,10 @@ export function createAuthService({ runtimeStore, baseDb, secureCookie = process
 
   function requireCsrf(request, session) {
     const origin = header(request, "origin");
-    const protocol = request.socket?.encrypted ? "https" : "http";
+    const forwardedProtocol = trustProxy ? header(request, "x-forwarded-proto").split(",")[0].trim() : "";
+    const protocol = forwardedProtocol === "https" || forwardedProtocol === "http"
+      ? forwardedProtocol
+      : request.socket?.encrypted ? "https" : "http";
     const expectedOrigin = `${protocol}://${header(request, "host")}`;
     if (origin && origin !== expectedOrigin) {
       throw new AuthError("AUTH_ORIGIN_FORBIDDEN", "跨站状态请求已拒绝。", 403);

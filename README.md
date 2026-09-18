@@ -38,6 +38,10 @@ node scripts/prepare-submission.mjs
 会生成 `dist/client` 静态站点、`dist/server` 公开版 Worker 与部署元数据；本地正式版
 仍由 `server/local-api.mjs` 启动。
 
+公网 Node 版默认启用独立演示沙箱：浏览器首次登录时生成随机沙箱编号，同一浏览器切换
+教师/学生身份会继续使用同一数据空间，不同访客的问答、研判、任务和导出记录相互隔离。
+沙箱 SQLite 保存在 `ZHIXUE_DATA_DIR/sandboxes/`，默认 24 小时后自动清理。
+
 数据说明：提交包只包含匿名合成演示数据，不含真实个人、真实组织身份或统一身份配置。完整能力以本地 Node 版为准；公开静态版是受限展示版，不提供正式写操作。
 
 当前验收事实来自 M6 final run `20260917T171802Z_2db5f2b`：Node 产品测试 175/175、Skill 26/26、M6 E2E 10/10、自动门禁通过；8 项严格人工验收仍为 blocked，因此不能宣称最终参赛交付已经全部完成。
@@ -60,6 +64,21 @@ chmod +x scripts/start-zhixue.sh
 ```
 
 Docker 配置已提供，但是否已复现必须以[部署手册](docs/部署手册.md)中的实际状态为准，不能因配置存在就视为验证通过。
+
+## 公网部署
+
+仓库根目录提供 `render.yaml` 和 `Dockerfile`，用于部署同域名的完整 Node 服务，而不是只有
+静态页面的 GitHub Pages 版本。生产环境至少需要以下配置：
+
+```text
+HOST=0.0.0.0
+ZHIXUE_DATA_DIR=/var/data
+ZHIXUE_COOKIE_SECURE=1
+ZHIXUE_TRUST_PROXY=1
+ZHIXUE_SANDBOX_TTL_HOURS=24
+```
+
+`/var/data` 必须挂载持久磁盘。详细步骤和验收要求见[公网部署方案](docs/公网部署方案.md)。
 
 ## 两个核心场景
 
@@ -139,6 +158,7 @@ release/       由发布脚本生成的干净提交目录与 manifest
 交付导航：
 
 - [架构说明](docs/架构说明.md)
+- [公网部署方案](docs/公网部署方案.md)
 - [参赛交付总览](docs/参赛交付总览.md)
 - [部署手册](docs/部署手册.md)
 - [评分证据矩阵](docs/评分证据矩阵.md)

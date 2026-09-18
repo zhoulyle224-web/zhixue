@@ -8,9 +8,15 @@ import { buildAnalysisInput, ImportError, SKILL_ID, SKILL_VERSION, validateImpor
 import { createRuntimeStore } from "./runtime-store.mjs";
 import { answerQa, getQaHistory, getQaInbox, getQaResources, QaError, replyQa } from "./qa-service.mjs";
 import { createTaskService, TaskError } from "./task-service.mjs";
-import { createAuthService, AuthError } from "./auth-service.mjs";
+import {
+  createAuthService,
+  AuthError,
+  normalizeSandboxId,
+  sandboxIdFromRequest,
+} from "./auth-service.mjs";
 import { createExportService, ExportError } from "./export-service.mjs";
 import { json, readJsonBody } from "./http-utils.mjs";
+import { createSandboxManager } from "./sandbox-manager.mjs";
 import { createStaticHandler } from "./static-service.mjs";
 import {
   authorizeStudentOffering,
@@ -26,11 +32,15 @@ const { loadZhixueSkills } = require("./skill-runtime.cjs");
 const ROOT = resolve(fileURLToPath(new URL(".", import.meta.url)), "..");
 const ASSETS_ROOT = resolve(ROOT, "assets");
 const DATA_ROOT = resolve(ROOT, "data");
+const RUNTIME_ROOT = resolve(process.env.ZHIXUE_DATA_DIR || resolve(DATA_ROOT, "runtime"));
 const DATABASE_PATH = resolve(DATA_ROOT, "zhixue_demo.sqlite");
 // Actor-level snapshots stay server-private; /assets/demo-data.json is public-safe only.
 const READ_MODEL_PATH = resolve(DATA_ROOT, "web_snapshots.json");
-const AUDIT_PATH = resolve(DATA_ROOT, "runtime", "audit.jsonl");
+const AUDIT_PATH = resolve(RUNTIME_ROOT, "audit.jsonl");
 const SKILL_ROOT = resolve(ASSETS_ROOT, "skills");
+const PUBLIC_SANDBOX_ID = `sbx_${"0".repeat(32)}`;
+const LOGIN_WINDOW_MS = 10 * 60 * 1000;
+const LOGIN_ATTEMPT_LIMIT = 20;
 
 const PROMPT_INJECTION = [
   /忽略(以上|之前|全部).*(指令|规则)/i,
@@ -97,7 +107,41 @@ function apiError(error) {
   }, error.status || (error.code === "PAYLOAD_TOO_LARGE" ? 413 : 400));
 }
 
-async function handleApi(request, url, runtimeStore, taskService, authService, exportService, baseDb) {
+function createLoginLimiter() {
+  const attempts = new Map();
+  function key(request) {
+    const forwarded = process.env.ZHIXUE_TRUST_PROXY === "1"
+      ? String(request.headers["x-forwarded-for"] || "").split(",")[0].trim()
+      : "";
+    return forwarded || request.socket?.remoteAddress || "unknown";
+  }
+  function check(request) {
+    const now = Date.now();
+    const id = key(request);
+    const recent = (attempts.get(id) || []).filter((time) => now - time < LOGIN_WINDOW_MS);
+    if (recent.length >= LOGIN_ATTEMPT_LIMIT) {
+      const error = new Error("登录尝试过于频繁，请十分钟后再试。");
+      error.code = "AUTH_RATE_LIMITED";
+      error.status = 429;
+      error.details = { retryAfterSeconds: Math.ceil((LOGIN_WINDOW_MS - (now - recent[0])) / 1000) };
+      throw error;
+    }
+    recent.push(now);
+    attempts.set(id, recent);
+    if (attempts.size > 5000) {
+      for (const [candidate, values] of attempts) {
+        if (!values.some((time) => now - time < LOGIN_WINDOW_MS)) attempts.delete(candidate);
+      }
+    }
+    return id;
+  }
+  function success(id) {
+    if (id) attempts.delete(id);
+  }
+  return { check, success };
+}
+
+async function handleApi(request, url, runtimeStore, taskService, authService, exportService, baseDb, prefetchedLoginBody, sandboxed = false) {
   let resolvedSession;
   const session = () => {
     resolvedSession ||= authService.resolve(request);
@@ -112,7 +156,7 @@ async function handleApi(request, url, runtimeStore, taskService, authService, e
 
   if (request.method === "POST" && url.pathname === "/api/auth/login") {
     try {
-      const body = await readJsonBody(request, 4096);
+      const body = prefetchedLoginBody || await readJsonBody(request, 4096);
       const result = authService.login({
         account: body.account,
         password: body.password,
@@ -128,6 +172,7 @@ async function handleApi(request, url, runtimeStore, taskService, authService, e
         objectType: "auth_session",
         objectRef: result.session.sessionId,
         result: "success",
+        sandboxId: result.data.sandbox?.id,
       });
       return json({ success: true, data: result.data }, 200, { "set-cookie": result.cookie });
     } catch (error) {
@@ -170,8 +215,8 @@ async function handleApi(request, url, runtimeStore, taskService, authService, e
     const model = await getReadModel();
     return json({
       success: true,
-      mode: "local",
-      database: "sqlite",
+      mode: sandboxed ? "public-sandbox" : "local",
+      database: sandboxed ? "isolated-sqlite" : "sqlite",
       syntheticData: true,
       integrity: Object.values(integrity)[0],
       sourceVersion: model.meta.sourceVersion,
@@ -179,7 +224,8 @@ async function handleApi(request, url, runtimeStore, taskService, authService, e
         auth: "ready",
         skills: "ready",
         sqlite: "ready",
-        network: "not_required",
+        sandbox: sandboxed ? "isolated" : "single-runtime",
+        network: process.env.NODE_ENV === "production" ? "public" : "not_required",
       },
     });
   }
@@ -661,20 +707,61 @@ export function createZhixueServer({
   runtimeDbPath,
   runtimeStore: injectedRuntimeStore,
   baselineDbPath = DATABASE_PATH,
+  sandboxRoot = RUNTIME_ROOT,
   secureCookie,
+  trustProxy = process.env.ZHIXUE_TRUST_PROXY === "1",
   exportOptions,
 } = {}) {
   const baseDb = new DatabaseSync(baselineDbPath, { readOnly: true });
-  const runtimeStore = injectedRuntimeStore || createRuntimeStore(runtimeDbPath);
-  const taskService = createTaskService({ baseDb, runtimeStore, audit: recordAudit });
-  const authService = createAuthService({ baseDb, runtimeStore, secureCookie });
-  const exportService = createExportService({ baseDb, runtimeStore, secondaryAudit: recordAudit, options: exportOptions });
+  const loginLimiter = createLoginLimiter();
+  const fixedRuntime = Boolean(injectedRuntimeStore || runtimeDbPath);
+  const runtimeStore = fixedRuntime ? (injectedRuntimeStore || createRuntimeStore(runtimeDbPath)) : null;
+  const fixedServices = runtimeStore ? {
+    runtimeStore,
+    taskService: createTaskService({ baseDb, runtimeStore, audit: recordAudit }),
+    authService: createAuthService({ baseDb, runtimeStore, secureCookie, trustProxy }),
+    exportService: createExportService({ baseDb, runtimeStore, secondaryAudit: recordAudit, options: exportOptions }),
+  } : null;
+  const sandboxManager = fixedRuntime ? null : createSandboxManager({
+    root: sandboxRoot,
+    baseDb,
+    secureCookie,
+    trustProxy,
+    exportOptions,
+    audit: recordAudit,
+  });
   const server = createServer(async (request, response) => {
     try {
       const url = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`);
-      const result = url.pathname.startsWith("/api/")
-        ? await handleApi(request, url, runtimeStore, taskService, authService, exportService, baseDb)
-        : await serveStatic(url);
+      let result;
+      if (url.pathname.startsWith("/api/")) {
+        let services = fixedServices;
+        let loginBody;
+        let loginLimitKey;
+        if (sandboxManager) {
+          let sandboxId = sandboxIdFromRequest(request);
+          if (request.method === "POST" && url.pathname === "/api/auth/login") {
+            loginLimitKey = loginLimiter.check(request);
+            loginBody = await readJsonBody(request, 4096);
+            sandboxId = normalizeSandboxId(loginBody.sandboxId) || sandboxManager.createId();
+          }
+          services = sandboxManager.get(sandboxId || PUBLIC_SANDBOX_ID);
+        }
+        result = await handleApi(
+          request,
+          url,
+          services.runtimeStore,
+          services.taskService,
+          services.authService,
+          services.exportService,
+          baseDb,
+          loginBody,
+          Boolean(sandboxManager),
+        );
+        if (loginLimitKey && result.status < 400) loginLimiter.success(loginLimitKey);
+      } else {
+        result = await serveStatic(url);
+      }
       response.writeHead(result.status, Object.fromEntries(result.headers.entries()));
       response.end(Buffer.from(await result.arrayBuffer()));
     } catch (error) {
@@ -692,7 +779,8 @@ export function createZhixueServer({
     }
   });
   server.on("close", () => {
-    if (!injectedRuntimeStore) runtimeStore.close();
+    if (sandboxManager) sandboxManager.close();
+    if (runtimeStore && !injectedRuntimeStore) runtimeStore.close();
     baseDb.close();
   });
   return server;
@@ -708,7 +796,9 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const host = process.env.HOST || getCliOption("host", "127.0.0.1");
   const server = createZhixueServer();
   server.listen(port, host, () => {
-    console.log(`智学双擎本地服务已启动：http://${host}:${port}`);
-    console.log("模式：本地 SQLite + 离线 Skill，无需外网。");
+    console.log(`智学双擎服务已启动：http://${host}:${port}`);
+    console.log(process.env.NODE_ENV === "production"
+      ? `模式：公网独立演示沙箱，数据目录 ${RUNTIME_ROOT}`
+      : "模式：本地独立演示沙箱 + 离线 Skill。");
   });
 }

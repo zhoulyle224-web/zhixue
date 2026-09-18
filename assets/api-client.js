@@ -1,6 +1,35 @@
 (function (global) {
   'use strict';
   let current = null;
+  let volatileSandboxId = null;
+  const SANDBOX_KEY = 'zhixue_demo_sandbox_v1';
+  const SANDBOX_RE = /^sbx_[a-f0-9]{32}$/;
+
+  function createSandboxId() {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return `sbx_${Array.from(bytes, value => value.toString(16).padStart(2, '0')).join('')}`;
+  }
+
+  function sandboxId() {
+    if (SANDBOX_RE.test(volatileSandboxId || '')) return volatileSandboxId;
+    try {
+      const saved = localStorage.getItem(SANDBOX_KEY);
+      if (SANDBOX_RE.test(saved || '')) return (volatileSandboxId = saved);
+      volatileSandboxId = createSandboxId();
+      localStorage.setItem(SANDBOX_KEY, volatileSandboxId);
+      return volatileSandboxId;
+    } catch {
+      return (volatileSandboxId ||= createSandboxId());
+    }
+  }
+
+  function rememberSandbox(data) {
+    const id = data?.sandbox?.id;
+    if (!SANDBOX_RE.test(id || '')) return;
+    volatileSandboxId = id;
+    try { localStorage.setItem(SANDBOX_KEY, id); } catch {}
+  }
 
   function loginUrl(role) {
     const safeRole = role === 'student' ? 'student' : 'teacher';
@@ -51,6 +80,7 @@
   async function me() {
     const payload = await parse(await fetch('/api/auth/me', { credentials: 'same-origin', headers: { accept: 'application/json' } }));
     current = payload.data;
+    rememberSandbox(current);
     return current;
   }
 
@@ -58,9 +88,10 @@
     const payload = await parse(await fetch('/api/auth/login', {
       method: 'POST', credentials: 'same-origin',
       headers: { accept: 'application/json', 'content-type': 'application/json' },
-      body: JSON.stringify({ account, password, requestedRole, rememberLogin }),
+      body: JSON.stringify({ account, password, requestedRole, rememberLogin, sandboxId: sandboxId() }),
     }));
     current = payload.data;
+    rememberSandbox(current);
     return current;
   }
 
@@ -70,5 +101,5 @@
     current = null;
   }
 
-  global.ZhixueApi = { apiFetch, me, login, logout, parse, get current() { return current; } };
+  global.ZhixueApi = { apiFetch, me, login, logout, parse, sandboxId, get current() { return current; } };
 })(window);
