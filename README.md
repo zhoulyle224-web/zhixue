@@ -67,8 +67,11 @@ Docker 配置已提供，但是否已复现必须以[部署手册](docs/部署�
 
 ## 公网部署
 
-仓库根目录提供 `render.yaml` 和 `Dockerfile`，用于部署同域名的完整 Node 服务，而不是只有
-静态页面的 GitHub Pages 版本。生产环境至少需要以下配置：
+面向中国大陆的参赛演示优先使用腾讯云 CloudBase 云托管。仓库根目录的 `Dockerfile`
+直接运行完整 Node 服务，`/var/data` 挂载 CloudBase 对象存储以保存独立沙箱 SQLite。
+详细控制台配置和验收步骤见[国内 CloudBase 部署方案](docs/国内CloudBase部署方案.md)。
+
+生产环境至少需要以下配置：
 
 ```text
 HOST=0.0.0.0
@@ -78,7 +81,8 @@ ZHIXUE_TRUST_PROXY=1
 ZHIXUE_SANDBOX_TTL_HOURS=24
 ```
 
-`/var/data` 必须挂载持久磁盘。详细步骤和验收要求见[公网部署方案](docs/公网部署方案.md)。
+`/var/data` 必须挂载持久存储。`render.yaml` 仅保留为海外部署备选，不作为国内正式入口；
+相关备选步骤见[公网部署方案](docs/公网部署方案.md)。
 
 ## 两个核心场景
 

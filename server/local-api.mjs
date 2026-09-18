@@ -217,6 +217,7 @@ async function handleApi(request, url, runtimeStore, taskService, authService, e
       success: true,
       mode: sandboxed ? "public-sandbox" : "local",
       database: sandboxed ? "isolated-sqlite" : "sqlite",
+      storageBackend: process.env.ZHIXUE_STORAGE_BACKEND || (sandboxed ? "persistent-filesystem" : "local-filesystem"),
       syntheticData: true,
       integrity: Object.values(integrity)[0],
       sourceVersion: model.meta.sourceVersion,
