@@ -104,7 +104,7 @@ check('answer.澄清', Array.isArray(ansClr.ask_clarification) && ansClr.ask_cla
 const profile=W.ZhixueSkillStudentProfile.analyze({knowledge_points:[{name:'栈',value:42},{name:'队列',value:78},{name:'树',value:91}],attendance_rate:88,task_completion_rate:50,wrong_count:7});
 check('profile.证据画像',profile.profile.weaknesses[0].name==='栈'&&profile.evidence.length>0,'weak='+profile.profile.weaknesses[0]?.name);
 const plan=W.ZhixueSkillLearningPlanner.plan({profile:profile.profile,evidence:profile.evidence});
-check('planner.教师确认草案',plan.status==='draft_pending_teacher'&&plan.teacher_confirmation_required&&plan.tasks.length>=3,'tasks='+plan.tasks.length);
+check('planner.自动生效且教师可调整',plan.status==='active_auto_generated'&&!plan.teacher_confirmation_required&&plan.teacher_editable&&plan.tasks.length>=3,'tasks='+plan.tasks.length);
 check('curator.知识治理',W.ZhixueSkillKnowledgeCurator.curate({entries:[{id:'x',layer:'K1',title:'测试',text:'内容'}]}).accepted.length===1,'curate');
 check('exercise.分级提示',W.ZhixueSkillExerciseCoach.generate({knowledge_point:'栈'}).exercises[0].hints.length>0,'hints');
 check('effect.调整建议',Boolean(W.ZhixueSkillEffectEvaluator.evaluate({before_mastery:50,after_mastery:72,completion_rate:100}).next_action),'action');

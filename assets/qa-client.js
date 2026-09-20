@@ -104,13 +104,14 @@
 
   function renderInbox() {
     const box = $('#inboxList'); if (!box) return;
-    if (teacherLoading) { box.innerHTML = '<div class="empty"><b>正在加载服务端问题…</b></div>'; return; }
-    if (teacherError) { box.innerHTML = `<div class="empty"><b>教师收件箱加载失败</b>${esc(teacherError)}</div>`; return; }
+    if (teacherLoading) { box.innerHTML = '<div class="empty"><b>正在加载服务端问题…</b></div>'; window.dispatchEvent(new CustomEvent('zhixue:teacher-qa-state',{detail:{rows:[...inbox],loading:true,error:''}})); return; }
+    if (teacherError) { box.innerHTML = `<div class="empty"><b>教师收件箱加载失败</b>${esc(teacherError)}</div>`; window.dispatchEvent(new CustomEvent('zhixue:teacher-qa-state',{detail:{rows:[...inbox],loading:false,error:teacherError}})); return; }
     const filtered = inbox.filter(row => filter === 'all' || filter === 'pending' && row.status === 'pending_teacher' || filter === 'replied' && row.status === 'teacher_replied' || filter === 'answered' && row.status === 'answered');
     const pending = inbox.filter(row => row.status === 'pending_teacher').length;
     document.querySelectorAll('#pendingBadge').forEach(el => { el.textContent = pending; });
     if ($('#pendingCount')) $('#pendingCount').textContent = pending;
     box.innerHTML = filtered.length ? filtered.map(row => `<article class="item question-item"><div class="item-top"><div><div class="item-text">${esc(row.question)}</div><div class="meta">${esc(row.course.courseName)} · ${time(row.createdAt)} · ${esc(row.studentAlias)}</div></div><span class="badge ${row.status === 'pending_teacher' ? '' : 'done'}">${row.status === 'pending_teacher' ? '待回复' : row.status === 'teacher_replied' ? '教师已回复' : 'Skill 已解答'}</span></div>${row.teacherReply ? `<div class="answer"><b>教师回复</b><br>${esc(row.teacherReply)}</div>` : ''}${row.status !== 'answered' ? `<div class="item-actions"><button class="iconbtn" data-qa-reply-open="${esc(row.questionId)}">${row.teacherReply ? '修改回复' : '回复学生'}</button></div><div class="reply" id="reply-${esc(row.questionId)}"><textarea maxlength="2000" placeholder="写下清晰、可执行的回复">${esc(row.teacherReply || '')}</textarea><button class="btn primary sm" data-qa-reply-save="${esc(row.questionId)}">保存并同步</button></div>` : evidenceHtml(row.evidence)}</article>`).join('') : '<div class="empty"><b>当前筛选下暂无问题</b>学生正式提问会从服务端同步到这里。</div>';
+    window.dispatchEvent(new CustomEvent('zhixue:teacher-qa-state',{detail:{rows:[...inbox],loading:teacherLoading,error:teacherError}}));
   }
   async function refreshTeacher() {
     const context = teacherContext, token = ++teacherToken, box = $('#inboxList');

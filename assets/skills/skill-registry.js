@@ -8,7 +8,7 @@ const definitions=[
   ['teacher-answer-manager','教师答疑管理','聚合问题、生成回复草案和 FAQ，教师确认后发送。','ZhixueSkillAnswerManager'],
   ['knowledge-base-curator','知识库构建与治理','治理 K0/K1/K2 知识的切片、来源、版本和检索字段。','ZhixueSkillKnowledgeCurator'],
   ['student-profile-analyzer','学生学习画像分析','基于授权学习证据形成可解释画像，不推断敏感人格属性。','ZhixueSkillStudentProfile'],
-  ['personalized-learning-planner','个性化学习方案制定','按个人画像生成目标、任务、资源、难度与期限草案。','ZhixueSkillLearningPlanner'],
+  ['personalized-learning-planner','个性化学习方案制定','按个人画像自动生成生效方案，并允许任课教师查看和调整。','ZhixueSkillLearningPlanner'],
   ['exercise-coach','练习生成与错因诊断','围绕个人薄弱点生成分级练习、提示和错误分类。','ZhixueSkillExerciseCoach'],
   ['learning-effect-evaluator','学习效果评估','比较计划前后证据并给出下一轮调整建议。','ZhixueSkillEffectEvaluator'],
 ];

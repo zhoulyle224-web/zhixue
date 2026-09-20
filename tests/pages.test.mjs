@@ -28,10 +28,10 @@ test("页面保留本地演示和导出入口", async () => {
   assert.match(html, /导出/);
 });
 
-test("教师主路径直接读取班级与学生数据，外部导入降级为高级说明", async () => {
+test("教师主路径显示班级概览并下钻独立学生详情，外部导入降级为高级说明", async () => {
   const teacher = await readFile(new URL("teacher.html", root), "utf8");
   const app = await readFile(new URL("assets/app.js", root), "utf8");
-  for (const id of ["teacherStudentList", "studentObservation", "personalPlanEditor", "refreshStudents", "analysisEvidence", "skillStatus"]) {
+  for (const id of ["teacherStudentList", "studentDetail", "studentObservation", "personalPlanEditor", "refreshStudents", "analysisEvidence", "skillStatus"]) {
     assert.match(teacher, new RegExp(`id="${id}"`));
   }
   assert.match(app, /api\/teacher\/classes\/\$\{currentClass\(\)\.classId\}\/students/);

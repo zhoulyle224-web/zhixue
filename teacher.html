@@ -51,9 +51,14 @@
     <section class="view" id="students">
       <div class="section-title"><div><h2>班级与学生数据</h2><p>直接读取当前课程教学班和学生学习记录，无需先上传外部文件。</p></div><span class="evidence-pill" id="studentDataUpdated">正在读取 SQLite…</span></div>
       <div class="card student-data-toolbar"><label>搜索学生 <input id="studentSearch" placeholder="姓名、匿名编号或薄弱点"></label><label>风险筛选 <select id="studentRiskFilter"><option value="all">全部</option><option value="高">高风险</option><option value="中">中风险</option><option value="none">无风险</option></select></label><button class="btn" id="refreshStudents">刷新数据</button></div>
-      <div class="grid student-data-layout"><article class="card panel"><div class="card-head"><div><h3>当前班级学生</h3><small id="studentListSummary">按当前课程与班级授权读取</small></div></div><div id="teacherStudentList" class="teacher-student-list"><p class="data-empty">正在加载学生数据…</p></div></article><article class="card panel observation-panel"><div class="card-head"><div><h3 id="observationTitle">教师观察视角</h3><small>只读；不会切换或占用学生账号</small></div><span class="readonly-note">教师身份保持登录</span></div><div id="studentObservation"><p class="data-empty">选择一名学生查看其向当前任课教师开放的数据。</p></div></article></div>
-      <article class="card panel personal-plan-editor" id="personalPlanEditor" hidden><div class="card-head"><div><h3>个人学习计划草案</h3><small>Skill 生成后须由教师确认发布</small></div><span id="personalPlanStatus">草案</span></div><label>本轮目标<textarea id="personalPlanGoal" maxlength="500"></textarea></label><label>路线<input id="personalPlanRoute" maxlength="80"></label><label>截止时间<input id="personalPlanDue" type="datetime-local"></label><div id="personalPlanTasks" class="personal-plan-tasks"></div><div class="quality-actions"><button class="btn" id="savePersonalPlan">保存草案</button><button class="btn primary" id="publishPersonalPlan">确认并发布</button></div></article>
+      <article class="card panel student-overview-panel"><div class="card-head"><div><h3>当前班级学生概览</h3><small id="studentListSummary">按当前课程与班级授权读取</small></div><span class="readonly-note">点击学生进入独立详情页</span></div><div id="teacherStudentList" class="teacher-student-list"><p class="data-empty">正在加载学生数据…</p></div></article>
       <details class="card panel advanced-import"><summary>高级数据管理（管理员补录）</summary><p>CSV / JSON 补录不再是教师日常研判的前置步骤。正式补录应写入标准业务表后再由本页统一读取。</p></details>
+    </section>
+
+    <section class="view" id="studentDetail">
+      <div class="section-title student-detail-heading"><div><button class="link-btn" id="backToStudentOverview">← 返回班级学生概览</button><h2 id="observationTitle">学生学习详情</h2><p>教师身份保持登录；详细学习数据按当前教学关系自动开放，其他学生无法查看。</p></div><span class="readonly-note">教师观察与方案调整</span></div>
+      <article class="card panel observation-panel"><div id="studentObservation"><p class="data-empty">请先从班级学生概览选择一名学生。</p></div></article>
+      <article class="card panel personal-plan-editor" id="personalPlanEditor" hidden><div class="card-head"><div><h3>系统个性化学习方案</h3><small>依据该生当前数据自动生成并生效；教师可以查看和调整，无需发布。</small></div><span id="personalPlanStatus">自动生效</span></div><label>本轮目标<textarea id="personalPlanGoal" maxlength="500"></textarea></label><label>学习路线<input id="personalPlanRoute" maxlength="80"></label><label>截止时间<input id="personalPlanDue" type="datetime-local"></label><div id="personalPlanTasks" class="personal-plan-tasks"></div><div class="quality-actions"><button class="btn primary" id="savePersonalPlan">保存调整</button></div></article>
     </section>
 
     <section class="view" id="analysis">
@@ -88,8 +93,8 @@
     </section>
 
     <section class="view" id="reports">
-      <div class="section-title"><div><h2>报告与教学复盘</h2><p>导出班级学情、答疑记录与改进建议，保留关键结论的数据来源。</p></div></div>
-      <div class="grid three report-grid"><article class="card panel"><span class="report-icon">▦</span><h3>班级学情报告</h3><p>知识点掌握、学生分层、异常数据和教学建议。</p><button class="btn primary sm" data-export="report">导出报告</button></article><article class="card panel"><span class="report-icon">✉</span><h3>答疑记录</h3><p>学生问题、资料依据、教师回复和处理状态。</p><button class="btn sm" data-export="questions">导出记录</button></article><article class="card panel"><span class="report-icon">↻</span><h3>教学复盘清单</h3><p>本轮调整、任务完成结果与下一步行动。</p><button class="btn sm" data-export="review">导出清单</button></article></div>
+      <div class="section-title"><div><h2>报告与教学复盘</h2><p>直接查看当前班级学情、答疑和任务结果，不需要先导出文件。</p></div><span class="evidence-pill">当前服务端数据</span></div>
+      <div class="grid three report-grid"><article class="card panel"><span class="report-icon">▦</span><h3>班级学情报告</h3><div id="reportClassSummary" class="report-live-content"><p class="data-empty">正在读取当前班级数据…</p></div></article><article class="card panel"><span class="report-icon">✉</span><h3>答疑记录</h3><div id="reportQaSummary" class="report-live-content"><p class="data-empty">正在读取答疑记录…</p></div></article><article class="card panel"><span class="report-icon">↻</span><h3>教学复盘清单</h3><div id="reportReviewSummary" class="report-live-content"><p class="data-empty">正在读取任务与反馈…</p></div></article></div>
       <article class="card panel timeline-card"><div class="card-head"><h3>教学改进时间线</h3><small>当前批次与任务事件</small></div><div class="timeline" id="teacherTimeline"><p class="data-empty">暂无当前批次数据</p></div></article>
     </section>
   </main>

@@ -326,10 +326,8 @@ async function handleApi(request, url, runtimeStore, taskService, authService, e
 
   if (request.method === "PUT" && url.pathname === "/api/student/sharing-preferences") {
     try {
-      const current=stateSession("student"),body=await readJsonBody(request),offeringId=authorizeStudentOffering(baseDb,current,body.offeringId);
-      const data=learningService.updateStudentPreferences(current.actorRefId,offeringId,body);
-      await recordAudit({actorRole:"student",accountId:current.accountId,action:"update_sharing_preferences",objectType:"student_sharing",objectRef:`${current.actorRefCode}:${offeringId}`,result:"success",version:data.version});
-      return json({success:true,data},200,{"cache-control":"no-store"});
+      const current=stateSession("student"),body=await readJsonBody(request);authorizeStudentOffering(baseDb,current,body.offeringId);
+      return json({success:false,code:"SHARING_MANAGED_BY_SYSTEM",message:"学习数据按教学关系自动向当前任课教师开放，无需学生手动设置。"},409,{"cache-control":"no-store"});
     } catch(error){if(error instanceof LearningError||error.code)return apiError(error);throw error;}
   }
 
