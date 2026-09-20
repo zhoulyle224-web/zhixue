@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "node server/local-api.mjs --port 4173",
     "start": "node server/local-api.mjs --port 8080",
+    "clean": "node scripts/clean-workspace.mjs",
     "build": "node scripts/build-hosted-site.mjs",
     "build:static": "node scripts/build-static-site.mjs",
     "test": "node scripts/run-tests.mjs && node scripts/verify-skills.cjs",

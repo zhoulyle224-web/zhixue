@@ -35,6 +35,9 @@ yarn-error.log*
 .vercel
 
 /dist/
+/.tmp/
+/.zhixue-*.lock
+/release/
 /.wrangler/
 /outputs/
 /work/
