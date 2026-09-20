@@ -101,6 +101,12 @@ function mapQa(row) {
     handoffStatus: row.handoff_status, teacherContext: row.teacher_context,
     teacherReply: row.teacher_reply, createdAt: row.created_at,
     answeredAt: row.answered_at, repliedAt: row.replied_at, updatedAt: row.updated_at,
+    sessionId: row.session_id || null,
+    answerState: row.answer_state || (row.answer_status === "answered" ? "已解答" : "建议转教师"),
+    answerSourceType: row.answer_source_type || "当前课程资料",
+    modelProvider: row.model_provider || "offline",
+    confidence: row.confidence || "中",
+    personalizationBasis: JSON.parse(row.personalization_basis_json || "[]"),
   };
 }
 
@@ -115,6 +121,14 @@ export function createRuntimeStore(dbPath = DEFAULT_RUNTIME_DB) {
     if (!columns.some((column) => column.name === "status")) {
       db.exec("ALTER TABLE runtime_analysis_runs ADD COLUMN status TEXT NOT NULL DEFAULT 'completed' CHECK (status IN ('running', 'completed', 'failed'))");
     }
+    const qaColumns = db.prepare("PRAGMA table_info(runtime_qa_records)").all();
+    const ensureQaColumn = (name, sql) => { if (!qaColumns.some(column => column.name === name)) db.exec(`ALTER TABLE runtime_qa_records ADD COLUMN ${sql}`); };
+    ensureQaColumn("session_id", "session_id TEXT");
+    ensureQaColumn("answer_state", "answer_state TEXT");
+    ensureQaColumn("answer_source_type", "answer_source_type TEXT");
+    ensureQaColumn("model_provider", "model_provider TEXT");
+    ensureQaColumn("confidence", "confidence TEXT");
+    ensureQaColumn("personalization_basis_json", "personalization_basis_json TEXT NOT NULL DEFAULT '[]'");
     // 'analyzed' was a presentation state in M2; confirmation remains the batch fact.
     db.prepare("UPDATE runtime_import_batches SET status = 'confirmed' WHERE status = 'analyzed' AND confirmed_at IS NOT NULL").run();
     db.exec("COMMIT");
@@ -290,8 +304,9 @@ export function createRuntimeStore(dbPath = DEFAULT_RUNTIME_DB) {
        course_id, course_code, course_name, question_text_redacted, answer_status,
        assistant_answer, evidence_json, related_knowledge_json, guide_questions_json,
        knowledge_version, skill_id, skill_version, handoff_status, teacher_context,
-       created_at, answered_at, updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+       created_at, answered_at, updated_at, session_id, answer_state,
+       answer_source_type, model_provider, confidence, personalization_basis_json)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
       id, record.clientRequestId, record.studentContext, record.studentNo,
       record.classId, record.offeringId, record.courseId, record.courseCode,
       record.courseName, record.question, record.status, record.assistantAnswer,
@@ -299,6 +314,9 @@ export function createRuntimeStore(dbPath = DEFAULT_RUNTIME_DB) {
       JSON.stringify(record.guideQuestions), record.knowledgeVersion,
       record.skillId, record.skillVersion, record.handoffStatus,
       record.teacherContext, now, record.status === "answered" ? now : null, now,
+      record.sessionId || null, record.answerState || null, record.answerSourceType || null,
+      record.modelProvider || "offline", record.confidence || null,
+      JSON.stringify(record.personalizationBasis || []),
     );
     return getQa(id);
   }
@@ -307,6 +325,22 @@ export function createRuntimeStore(dbPath = DEFAULT_RUNTIME_DB) {
     return db.prepare(`SELECT * FROM runtime_qa_records
       WHERE student_context = ? AND offering_id = ?
       ORDER BY created_at DESC, rowid DESC LIMIT ?`).all(studentContext, offeringId, limit).map(mapQa);
+  }
+
+  function createQaSession(studentContext, offeringId, title = "新对话") {
+    const now = new Date().toISOString(), sessionId = `qs_${randomUUID()}`;
+    db.prepare("INSERT INTO runtime_qa_sessions_v2(id,student_context,offering_id,title,created_at,updated_at) VALUES(?,?,?,?,?,?)")
+      .run(sessionId, studentContext, offeringId, String(title).slice(0, 80), now, now);
+    return { sessionId, studentContext, offeringId, title: String(title).slice(0, 80), createdAt: now, updatedAt: now };
+  }
+
+  function getQaSession(sessionId) {
+    return db.prepare("SELECT * FROM runtime_qa_sessions_v2 WHERE id=?").get(sessionId) || null;
+  }
+
+  function getQaSessionHistory(sessionId, limit = 8) {
+    return db.prepare("SELECT * FROM runtime_qa_records WHERE session_id=? ORDER BY created_at DESC,rowid DESC LIMIT ?")
+      .all(sessionId, limit).reverse().map(mapQa);
   }
 
   function getTeacherQa(offeringId, classId, status = "all", limit = 50) {
@@ -323,6 +357,14 @@ export function createRuntimeStore(dbPath = DEFAULT_RUNTIME_DB) {
       handoff_status = 'replied', replied_at = ?, updated_at = ?
       WHERE id = ? AND teacher_context = ? AND answer_status IN ('pending_teacher','teacher_replied')`)
       .run(reply, now, now, questionId, teacherContext);
+    return getQa(questionId);
+  }
+
+  function handoffQa(questionId, studentContext) {
+    const now = new Date().toISOString();
+    db.prepare(`UPDATE runtime_qa_records SET answer_status='pending_teacher',handoff_status='pending',
+      answer_state='已转教师',updated_at=? WHERE id=? AND student_context=?
+      AND answer_status='answered' AND handoff_status='not_required'`).run(now, questionId, studentContext);
     return getQa(questionId);
   }
 
@@ -364,6 +406,10 @@ export function createRuntimeStore(dbPath = DEFAULT_RUNTIME_DB) {
     getStudentQa,
     getTeacherQa,
     replyQa,
+    handoffQa,
+    createQaSession,
+    getQaSession,
+    getQaSessionHistory,
     writeExportAudit,
     getExportAudit,
     // Internal server services share this connection so multi-table M3 writes

@@ -1,11 +1,11 @@
 /* M1 课程答疑界面：服务端是问答、待办和回复的唯一正式数据源。 */
 (function (global) {
   'use strict';
-  const STUDENT = 'student:S240101'; // 仅作请求一致性标记；真实身份由服务端 Session 决定。
+  const studentContext = () => `student:${global.ZhixueApi.current?.actorRefCode || 'S240101'}`;
   const $ = selector => document.querySelector(selector);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const time = value => value ? new Date(value).toLocaleString('zh-CN') : '—';
-  let studentCourse = null, teacherContext = '', studentToken = 0, teacherToken = 0;
+  let studentCourse = null, teacherContext = '', studentToken = 0, teacherToken = 0, qaSessionId = null;
   let resources = null, resourceError = '', history = [], inbox = [], filter = 'all', sending = false, taskCache = [];
   let teacherLoading = false, teacherError = '';
 
@@ -23,11 +23,11 @@
   function setSending(value) { sending = value; const button = $('#sendQuestion'); if (button) { button.disabled = value; button.textContent = value ? '正在检索当前课程资料…' : '发送问题'; } }
   function initialChat(course) {
     const el = $('#chatMessages'); if (!el) return;
-    el.innerHTML = `<div class="chat ai"><span>AI</span><div><b>课程学习助手 · 本地 Skill</b><p>你好！我会基于《${esc(course?.name || '当前课程')}》的合成演示课程资料回答。回答会显示引用；资料不足时会转教师确认。</p></div></div>`;
+    el.innerHTML = `<div class="chat ai"><span>AI</span><div><b>课程智能助教</b><p>你好！我会优先使用《${esc(course?.name || '当前课程')}》资料，也能回答通用基础和计算机公共基础问题。无模型配置时会明确显示离线检索模式；资料不足时由你决定是否转教师。</p></div></div>`;
   }
   function evidenceHtml(evidence) {
     if (!evidence?.length) return '';
-    return `<details class="qa-evidence"><summary>查看 ${evidence.length} 条课程资料依据</summary>${evidence.map(item => `<div><b>${esc(item.title)}</b> · ${esc(item.locator)}<br><small>${esc(item.resourceType)} · ${esc(item.sourceLabel)} · ${esc(item.version)} · ${esc(item.resourceId)}</small></div>`).join('')}</details>`;
+    return `<details class="qa-evidence"><summary>查看 ${evidence.length} 条回答依据</summary>${evidence.map(item => `<div><b>${esc(item.title || item.sourceLabel || '知识依据')}</b> · ${esc(item.locator || '已校验')}<br><small>${esc(item.knowledgeLayer || item.resourceType || '知识库')} · ${esc(item.sourceLabel || '本地资料')} · ${esc(item.version || '当前版本')}${item.resourceId ? ` · ${esc(item.resourceId)}` : ''}</small></div>`).join('')}</details>`;
   }
   function chat(role, content, extra = '') {
     const el = $('#chatMessages'); if (!el) return;
@@ -39,8 +39,8 @@
     const course = studentCourse;
     const count = $('#qaResourceCount'), list = $('#qaResourceList'), quick = $('#qaQuickQuestions');
     if (!course) return;
-    if (count) count.textContent = resourceError ? '● 当前课程资料加载失败' : resources ? resources.resources.length ? `● 已载入 ${resources.resources.length} 份合成演示课程资料` : '● 当前课程暂无可用演示资料' : '● 正在加载当前课程资料';
-    if (list) list.innerHTML = resourceError ? `<p class="qa-empty-resource">${esc(resourceError)}；本地正式答疑暂不可用。</p>` : resources?.resources.length ? resources.resources.map(r => `<details class="qa-resource"><summary><span>${esc(r.resourceType)}</span><b>${esc(r.title)}</b><small>${esc(r.version)} · 合成演示</small></summary><p>${esc(r.chapter || '')} · 资源 ${esc(r.resourceId)}</p></details>`).join('') : resources ? '<p class="qa-empty-resource">当前课程暂无可用演示资料；提问后将由教师确认。</p>' : '<p class="qa-empty-resource">正在加载当前课程资料…</p>';
+    if (count) count.textContent = resourceError ? '● 当前课程资料加载失败' : resources ? `● ${resources.mode==='model-assisted'?'模型增强':'离线知识检索'} · 课程资料 ${resources.resources.length} 份 · 公共知识 ${resources.commonKnowledgeCount||0} 条` : '● 正在加载知识库';
+    if (list) list.innerHTML = resourceError ? `<p class="qa-empty-resource">${esc(resourceError)}；本地正式答疑暂不可用。</p>` : resources?.resources.length ? resources.resources.map(r => `<details class="qa-resource"><summary><span>${esc(r.resourceType)}</span><b>${esc(r.title)}</b><small>${esc(r.version)} · 合成演示</small></summary><p>${esc(r.chapter || '')} · 资源 ${esc(r.resourceId)}</p></details>`).join('') : resources ? `<p class="qa-empty-resource">当前课程暂无专属资料，仍可使用 ${resources.commonKnowledgeCount || 0} 条通用与计算机公共基础知识；证据不足时可由你决定是否转教师。</p>` : '<p class="qa-empty-resource">正在加载当前课程资料…</p>';
     if (quick) quick.innerHTML = (resources?.sampleQuestions || []).map(q => `<button data-qa-question="${esc(q)}">${esc(q)}</button>`).join('');
   }
   function renderStudentHistory(doneTasks) {
@@ -54,8 +54,9 @@
     initialChat(studentCourse);
     for (const row of [...history].reverse()) {
       chat('user', row.question, `<small>问题编号 ${esc(row.questionId)} · ${time(row.createdAt)}</small>`);
-      const pending = row.status !== 'answered';
-      chat('ai', row.assistantAnswer, `${pending ? `<small>资料不足 · ${row.handoffStatus === 'pending' ? '已转教师确认' : '教师已回复'}</small>` : evidenceHtml(row.evidence)}<small>问题编号 ${esc(row.questionId)} · ${esc(row.course.courseName)}</small>`);
+      const pending = row.status === 'pending_teacher';
+      const handoff = row.answerState === '建议转教师' || row.answerState === '需澄清' ? `<button class="btn sm" data-qa-handoff="${esc(row.questionId)}">转给任课教师</button>` : '';
+      chat('ai', row.assistantAnswer, `${pending ? '<small>已由学生确认转教师</small>' : evidenceHtml(row.evidence)}${handoff}<small>${esc(row.answerSourceType||'')} · ${esc(row.modelProvider||'offline')} · 问题编号 ${esc(row.questionId)}</small>`);
       if (row.teacherReply) chat('teacher', row.teacherReply, `<small>${time(row.repliedAt)}</small>`);
     }
   }
@@ -63,7 +64,7 @@
     if (!studentCourse?.offeringId) return;
     const course = { ...studentCourse }, token = ++studentToken;
     resources = null; resourceError = ''; history = []; renderResources(); initialChat(course); status('正在加载当前课程资料与答疑记录…');
-    const query = `studentContext=${encodeURIComponent(STUDENT)}&offeringId=${course.offeringId}`;
+    const query = `studentContext=${encodeURIComponent(studentContext())}&offeringId=${course.offeringId}`;
     const [resourceResult, historyResult] = await Promise.allSettled([
       api(`/api/qa/resources?${query}`), api(`/api/qa/history?${query}`),
     ]);
@@ -74,12 +75,12 @@
     renderResources(); renderChatHistory(); renderStudentHistory();
     if (resourceResult.status === 'rejected' || historyResult.status === 'rejected') {
       status(resourceResult.reason?.message || historyResult.reason?.message || '课程答疑加载失败', 'error');
-    } else status(resources.knowledgeAvailable ? '当前答疑由项目内本地 Skill 基于本课程合成演示资料运行；资料不足时转教师处理。' : '当前课程暂未配置演示资料；提问后将转教师确认。');
+    } else status(resources.knowledgeAvailable ? '当前答疑优先使用本课程资料，并可补充通用与计算机公共基础知识。' : `当前课程暂无专属资料，可使用 ${resources.commonKnowledgeCount || 0} 条公共基础知识；证据不足时由你决定是否转教师。`);
   }
   function setStudentCourse(course) {
     const changed = studentCourse?.offeringId !== course?.offeringId;
     studentCourse = course?.offeringId ? { offeringId: course.offeringId, name: course.name } : null;
-    if (changed) { ++studentToken; refreshStudent(); }
+    if (changed) { qaSessionId=null; ++studentToken; refreshStudent(); }
   }
   async function send() {
     const input = $('#askInput'), question = input?.value.trim();
@@ -87,16 +88,17 @@
     if (question.length > 500) { status('问题不能超过 500 字。', 'error'); return; }
     const course = studentCourse && { ...studentCourse };
     if (!course) { status('请先选择有教学班编号的课程。', 'error'); return; }
-    setSending(true); status(`正在检索《${course.name}》当前课程资料…`); const requestId = crypto.randomUUID();
+    setSending(true); status(`正在理解问题并检索《${course.name}》及公共基础知识…`); const requestId = crypto.randomUUID();
     try {
-      const result = await api('/api/qa', { method:'POST', headers:{ 'content-type':'application/json' },
-        body:JSON.stringify({ studentContext:STUDENT, offeringId:course.offeringId, question, clientRequestId:requestId }) });
+      if (!qaSessionId) { const session = await api('/api/qa/sessions', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ studentContext:studentContext(), offeringId:course.offeringId, title:question.slice(0,40) }) }); qaSessionId=session.sessionId; }
+      const result = await api(`/api/qa/sessions/${encodeURIComponent(qaSessionId)}/messages`, { method:'POST', headers:{ 'content-type':'application/json' },
+        body:JSON.stringify({ studentContext:studentContext(), offeringId:course.offeringId, question, clientRequestId:requestId }) });
       if (studentCourse?.offeringId === course.offeringId) {
         input.value = ''; await refreshStudent();
-        status(result.answer_status === '已解答' ? `本地 Skill 已解答 · ${result._evidence.length} 条可定位引用` : `资料不足 · 已转教师确认 · 问题编号 ${result.questionId}`);
+        status(result.answer_status === '已解答' ? `${result.answer_source_type} · ${result.model_provider} · ${result._evidence.length} 条依据` : `${result.answer_status} · 未自动转教师 · 问题编号 ${result.questionId}`);
       } else status(`《${course.name}》的问题已提交；切回该课程可查看结果。`);
     } catch (error) {
-      if (studentCourse?.offeringId === course.offeringId) status(error.code === 'QA_HANDOFF_FAILED' ? '资料不足 · 教师待办未同步。请重试或直接联系教师。' : `${error.message} 请重试。`, 'error');
+      if (studentCourse?.offeringId === course.offeringId) status(`${error.message} 问题未确认保存时请重试。`, 'error');
     } finally { setSending(false); }
   }
 
@@ -127,10 +129,15 @@
     try { await api(`/api/qa/${encodeURIComponent(id)}/reply`, { method:'POST', headers:{ 'content-type':'application/json' }, body:JSON.stringify({ context:teacherContext, reply }) }); await refreshTeacher(); }
     catch (error) { if (button) { button.disabled = false; button.textContent = `同步失败：${error.message}`; } }
   }
+  async function handoff(id) {
+    try { await api(`/api/qa/${encodeURIComponent(id)}/handoff`, { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({studentContext:studentContext()}) }); await refreshStudent(); status('已确认转给任课教师。'); }
+    catch (error) { status(`转交失败：${error.message}。问题仍保留，可重试。`, 'error'); }
+  }
   document.addEventListener('click', event => {
     const question = event.target.closest('[data-qa-question]'); if (question) { if ($('#askInput')) $('#askInput').value = question.dataset.qaQuestion; send(); }
     const open = event.target.closest('[data-qa-reply-open]'); if (open) document.getElementById(`reply-${open.dataset.qaReplyOpen}`)?.classList.toggle('on');
     const save = event.target.closest('[data-qa-reply-save]'); if (save) saveReply(save.dataset.qaReplySave);
+    const transfer = event.target.closest('[data-qa-handoff]'); if (transfer) handoff(transfer.dataset.qaHandoff);
   });
   global.ZhixueQaClient = { setStudentCourse, refreshStudent, send, renderStudentHistory, setTeacherContext, refreshTeacher, renderInbox, setFilter };
 })(window);

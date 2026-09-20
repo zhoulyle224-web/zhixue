@@ -11,6 +11,9 @@ VALUES (4, CURRENT_TIMESTAMP);
 INSERT OR IGNORE INTO runtime_schema_meta(version, applied_at)
 VALUES (5, CURRENT_TIMESTAMP);
 
+INSERT OR IGNORE INTO runtime_schema_meta(version, applied_at)
+VALUES (6, CURRENT_TIMESTAMP);
+
 CREATE TABLE IF NOT EXISTS runtime_auth_accounts (
   id TEXT PRIMARY KEY,
   account_name TEXT NOT NULL UNIQUE,
@@ -267,3 +270,61 @@ CREATE INDEX IF NOT EXISTS idx_runtime_export_audits_account
 
 CREATE INDEX IF NOT EXISTS idx_runtime_export_audits_scope
   ON runtime_export_audits(scope_ref, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS runtime_qa_sessions_v2 (
+  id TEXT PRIMARY KEY,
+  student_context TEXT NOT NULL,
+  offering_id INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_runtime_qa_sessions_v2_student
+  ON runtime_qa_sessions_v2(student_context, offering_id, updated_at DESC);
+
+CREATE TABLE IF NOT EXISTS runtime_student_sharing_preferences (
+  student_id INTEGER NOT NULL,
+  offering_id INTEGER NOT NULL,
+  behavior_details INTEGER NOT NULL DEFAULT 0 CHECK (behavior_details IN (0,1)),
+  answer_text INTEGER NOT NULL DEFAULT 0 CHECK (answer_text IN (0,1)),
+  qa_content INTEGER NOT NULL DEFAULT 0 CHECK (qa_content IN (0,1)),
+  goals_preferences INTEGER NOT NULL DEFAULT 0 CHECK (goals_preferences IN (0,1)),
+  version INTEGER NOT NULL DEFAULT 1,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY(student_id, offering_id)
+);
+
+CREATE TABLE IF NOT EXISTS runtime_personal_plans (
+  id TEXT PRIMARY KEY,
+  student_id INTEGER NOT NULL,
+  student_no TEXT NOT NULL,
+  offering_id INTEGER NOT NULL,
+  class_id INTEGER NOT NULL,
+  teacher_context TEXT NOT NULL,
+  version_no INTEGER NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('draft','published','superseded','revoked')),
+  goal TEXT NOT NULL,
+  route TEXT NOT NULL,
+  due_at TEXT NOT NULL,
+  tasks_json TEXT NOT NULL,
+  basis_json TEXT NOT NULL,
+  skill_version TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  published_at TEXT,
+  UNIQUE(student_id, offering_id, version_no)
+);
+
+CREATE INDEX IF NOT EXISTS idx_runtime_personal_plans_scope
+  ON runtime_personal_plans(student_id, offering_id, status, updated_at DESC);
+
+CREATE TABLE IF NOT EXISTS runtime_observation_audits (
+  id TEXT PRIMARY KEY,
+  teacher_id INTEGER NOT NULL,
+  student_id INTEGER NOT NULL,
+  offering_id INTEGER NOT NULL,
+  class_id INTEGER NOT NULL,
+  fields_json TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);

@@ -13,7 +13,7 @@
     <div class="side-label">课程教学</div>
     <button class="menu on" data-view="teacherHome"><span>▦</span>工作台首页</button>
     <button class="menu" data-view="classes"><span>▤</span>课程与班级</button>
-    <button class="menu" data-view="import"><span>⇧</span>数据导入与质检</button>
+    <button class="menu" data-view="students"><span>◎</span>班级与学生数据</button>
     <button class="menu" data-view="analysis"><span>◫</span>学情智能研判</button>
     <div class="side-label">教学闭环</div>
     <button class="menu" data-view="tasks"><span>✓</span>分层任务发布</button>
@@ -48,13 +48,12 @@
       <div id="teacherCourseGrid" class="teacher-course-grid"></div>
     </section>
 
-    <section class="view" id="import">
-      <div class="section-title"><div><h2>数据导入与质检</h2><p>按当前课程和班级导入匿名“学生 × 知识点 × 得分”记录；先质检、确认，再生成可追溯研判。</p></div><button class="btn" id="downloadTemplate">下载导入模板</button></div>
-      <div class="grid import-grid">
-        <article class="card panel"><div class="card-head"><div><h3>① 数据范围与字段</h3><small>本阶段每次导入形成独立批次，不自动合并旧数据</small></div></div><div class="m2-schema"><b>必需字段</b><p>匿名编号、知识点、得分（0–100）；完成时间可选</p><b>研判口径</b><p>每名学生按有效知识点得分求均值，再计算班级平均、及格率和分层；无效行不参与。</p><b>班级隔离</b><p>请先在页面顶部选择已有的课程和班级，再导入数据。</p></div></article>
-        <article class="card panel"><div class="card-head"><div><h3>② 上传匿名数据</h3><small>CSV 或 JSON，单文件不超过 10 MiB</small></div></div><label class="upload-zone" for="dataFile" id="uploadZone"><span>⇧</span><b>拖放文件到这里，或点击选择</b><small>必需字段：匿名编号、知识点、得分；完成时间可选</small></label><input id="dataFile" type="file" accept=".csv,.json" hidden><button class="btn sm block" id="loadSample">没有文件？载入合成演示数据</button></article>
-      </div>
-      <article class="card panel quality-card"><div class="card-head"><div><h3>③ 数据质量检查</h3><small id="qualitySummary" role="status" aria-live="polite">载入数据后显示检查结果</small></div><span class="quality-score" id="qualityScore">待检查</span></div><div id="qualityTable" class="quality-empty"><span>◎</span><b>尚未导入数据</b><p>完成导入后，系统会显示有效、排除和警告记录。</p></div><div class="quality-actions"><button class="btn" id="ignoreWarnings" disabled>确认质检（保留警告）</button><button class="btn primary" id="startAnalysis" disabled>开始真实研判</button></div></article>
+    <section class="view" id="students">
+      <div class="section-title"><div><h2>班级与学生数据</h2><p>直接读取当前课程教学班和学生学习记录，无需先上传外部文件。</p></div><span class="evidence-pill" id="studentDataUpdated">正在读取 SQLite…</span></div>
+      <div class="card student-data-toolbar"><label>搜索学生 <input id="studentSearch" placeholder="姓名、匿名编号或薄弱点"></label><label>风险筛选 <select id="studentRiskFilter"><option value="all">全部</option><option value="高">高风险</option><option value="中">中风险</option><option value="none">无风险</option></select></label><button class="btn" id="refreshStudents">刷新数据</button></div>
+      <div class="grid student-data-layout"><article class="card panel"><div class="card-head"><div><h3>当前班级学生</h3><small id="studentListSummary">按当前课程与班级授权读取</small></div></div><div id="teacherStudentList" class="teacher-student-list"><p class="data-empty">正在加载学生数据…</p></div></article><article class="card panel observation-panel"><div class="card-head"><div><h3 id="observationTitle">教师观察视角</h3><small>只读；不会切换或占用学生账号</small></div><span class="readonly-note">教师身份保持登录</span></div><div id="studentObservation"><p class="data-empty">选择一名学生查看其向当前任课教师开放的数据。</p></div></article></div>
+      <article class="card panel personal-plan-editor" id="personalPlanEditor" hidden><div class="card-head"><div><h3>个人学习计划草案</h3><small>Skill 生成后须由教师确认发布</small></div><span id="personalPlanStatus">草案</span></div><label>本轮目标<textarea id="personalPlanGoal" maxlength="500"></textarea></label><label>路线<input id="personalPlanRoute" maxlength="80"></label><label>截止时间<input id="personalPlanDue" type="datetime-local"></label><div id="personalPlanTasks" class="personal-plan-tasks"></div><div class="quality-actions"><button class="btn" id="savePersonalPlan">保存草案</button><button class="btn primary" id="publishPersonalPlan">确认并发布</button></div></article>
+      <details class="card panel advanced-import"><summary>高级数据管理（管理员补录）</summary><p>CSV / JSON 补录不再是教师日常研判的前置步骤。正式补录应写入标准业务表后再由本页统一读取。</p></details>
     </section>
 
     <section class="view" id="analysis">
@@ -101,6 +100,11 @@
 <script src="assets/skills/classroom-interaction-generator.js"></script>
 <script src="assets/skills/course-content-optimizer.js"></script>
 <script src="assets/skills/teacher-answer-manager.js"></script>
+<script src="assets/skills/knowledge-base-curator.js"></script>
+<script src="assets/skills/student-profile-analyzer.js"></script>
+<script src="assets/skills/personalized-learning-planner.js"></script>
+<script src="assets/skills/exercise-coach.js"></script>
+<script src="assets/skills/learning-effect-evaluator.js"></script>
 <script src="assets/skills/skill-registry.js"></script>
 <script src="assets/api-client.js"></script>
 <script src="assets/qa-client.js"></script>

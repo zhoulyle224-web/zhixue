@@ -10,6 +10,9 @@ function roleFor(url, options = {}) {
   if (path === '/api/catalog') return 'teacher';
   if (path.startsWith('/api/qa/teacher-inbox') || /\/api\/qa\/qa_[^/]+\/reply$/.test(path)) return 'teacher';
   if (path === '/api/qa' || path.startsWith('/api/qa/resources') || path.startsWith('/api/qa/history')) return 'student';
+  if (path === '/api/qa/sessions' || /\/api\/qa\/sessions\/[^/]+\/messages$/.test(path) || /\/api\/qa\/qa_[^/]+\/handoff$/.test(path)) return 'student';
+  if (path.startsWith('/api/student/')) return 'student';
+  if (path.startsWith('/api/teacher/students/') || path.startsWith('/api/teacher/classes/') || path.startsWith('/api/plans/')) return 'teacher';
   if (path.startsWith('/api/import/') || path.startsWith('/api/analysis/') || path === '/api/analyze') return 'teacher';
   if (path.startsWith('/api/tasks/student') || /\/api\/tasks\/assignments\/[^/]+\/complete$/.test(path)) return 'student';
   if (path.startsWith('/api/tasks/')) return 'teacher';

@@ -18,6 +18,7 @@
     <button class="menu" data-view="studentTasks"><span>✓</span>个性化任务 <span class="count" id="taskBadge">3</span></button>
     <div class="side-label">反馈复盘</div>
     <button class="menu" data-view="history"><span>↻</span>学习记录</button>
+    <button class="menu" data-view="sharing"><span>◇</span>数据共享设置</button>
     <div class="side-bottom"><div class="mode-pill">答疑结论会显示课程资料依据；学习画像来自脱敏数据库记录。</div></div>
   </aside>
   <main class="content">
@@ -47,16 +48,17 @@
     </section>
 
     <section class="view" id="assistant">
-      <div class="section-title"><div><h2>课程智能答疑</h2><p>项目内本地 Skill 仅依据当前课程的合成演示资料回答；资料不足时转教师处理。</p></div><span class="source-status" id="qaResourceCount">● 正在加载当前课程资料</span></div>
+      <div class="section-title"><div><h2>课程智能答疑</h2><p>优先使用当前课程资料，并补充通用基础与计算机公共基础知识；证据不足时由学生决定是否转教师。</p></div><span class="source-status" id="qaResourceCount">● 正在加载知识库</span></div>
       <div class="chat-layout">
         <article class="card chat-panel"><div id="chatMessages" class="chat-messages"></div><div class="quick-questions" id="qaQuickQuestions"></div><p id="qaStatus" class="qa-status" role="status" aria-live="polite">正在准备当前课程答疑…</p><div class="chat-input"><textarea id="askInput" maxlength="500" placeholder="输入你的课程问题，按 Ctrl + Enter 发送"></textarea><button class="btn primary" id="sendQuestion">发送问题</button></div></article>
-        <aside class="card panel source-panel"><div class="card-head"><h3>本次可用资料</h3><small>回答会标注具体引用</small></div><div class="source-list" id="qaResourceList"></div><div class="source-tip">仅展示经当前课程校验的合成演示资料；资料不足时不会借用其他课程内容。</div></aside>
+        <aside class="card panel source-panel"><div class="card-head"><h3>本次可用资料</h3><small>回答会标注具体引用</small></div><div class="source-list" id="qaResourceList"></div><div class="source-tip">课程知识严格按当前课程隔离；通用基础和计算机公共基础知识可补充使用，不会借用其他课程的专属内容。</div></aside>
       </div>
     </section>
 
     <section class="view" id="studentTasks">
       <div class="section-title"><div><h2>个性化任务</h2><p>教师基于最近一次学情研判确认发布；任务层次仅用于本轮学习，不代表长期能力评价。</p></div><span class="tier-badge" id="studentTaskTier">当前：等待任务</span></div>
       <div class="card task-runtime-banner" id="studentTaskStatus" role="status" aria-live="polite">正在从本地服务读取本人任务。</div>
+      <div id="activePersonalPlan" class="card panel"><p class="data-empty">正在读取教师发布的个人学习计划…</p></div>
       <div class="task-overview card"><div><b>本轮复习目标</b><p id="studentTaskGoal">进入课程后读取教师发布的当前有效任务。</p></div><div class="task-progress"><span><b id="taskDoneCount">0</b> / <b id="taskTotalCount">0</b> 已完成</span><div class="progress"><i id="studentTaskBar" style="width:0"></i></div></div></div>
       <div id="personalTaskList" class="personal-task-list"></div>
     </section>
@@ -64,6 +66,10 @@
     <section class="view" id="history">
       <div class="section-title"><div><h2>学习记录与反馈</h2><p>查看任务、答疑和掌握度变化；这些结果会以汇总形式反馈给教师。</p></div><button class="btn" id="exportStudentData">导出我的学习记录</button></div>
       <div class="grid history-grid"><article class="card panel"><div class="card-head"><h3>最近学习动态</h3><small>当前课程</small></div><div id="learningTimeline" class="timeline"></div><div id="runtimeTaskHistory" class="task-version-list"></div></article><article class="card panel"><div class="card-head"><h3>本轮状态</h3><small>当前课程数据，不推测历史增幅</small></div><div class="change-list" id="studentCurrentStatus"><p class="data-empty">暂无当前课程数据</p></div><div class="evidence-note"><b>给教师的反馈</b> 你完成任务后，系统只反馈课程学习结果，不显示与学习无关的个人信息。</div></article></div>
+    </section>
+    <section class="view" id="sharing">
+      <div class="section-title"><div><h2>数据共享设置</h2><p>课程教学必需数据仅向当前任课教师开放；以下可选明细由你决定。</p></div><span class="evidence-pill" id="sharingVersion">正在读取设置…</span></div>
+      <article class="card panel sharing-panel"><div class="sharing-required"><h3>教学必需数据</h3><p>成绩、知识点掌握、任务进度、错题复习状态、出勤与风险证据。仅限本人和当前任课教师，不向其他学生开放。</p></div><div class="sharing-options"><label><input type="checkbox" id="shareBehavior"> 学习时长、设备和最近活跃明细</label><label><input type="checkbox" id="shareAnswers"> 错题原始作答文本</label><label><input type="checkbox" id="shareQa"> 已由智能助教解决的完整问答正文</label><label><input type="checkbox" id="shareGoals"> 自我评价、学习偏好和个人目标</label></div><button class="btn primary" id="saveSharing">保存共享设置</button><p id="sharingStatus" class="qa-status" role="status"></p></article>
     </section>
   </main>
 </div>
@@ -73,6 +79,11 @@
 <script src="assets/skills/classroom-interaction-generator.js"></script>
 <script src="assets/skills/course-content-optimizer.js"></script>
 <script src="assets/skills/teacher-answer-manager.js"></script>
+<script src="assets/skills/knowledge-base-curator.js"></script>
+<script src="assets/skills/student-profile-analyzer.js"></script>
+<script src="assets/skills/personalized-learning-planner.js"></script>
+<script src="assets/skills/exercise-coach.js"></script>
+<script src="assets/skills/learning-effect-evaluator.js"></script>
 <script src="assets/skills/skill-registry.js"></script>
 <script src="assets/api-client.js"></script>
 <script src="assets/qa-client.js"></script>

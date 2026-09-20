@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { DatabaseSync } from "node:sqlite";
 import { buildAnalysisInput, ImportError, SKILL_ID, SKILL_VERSION, validateImport } from "./import-service.mjs";
 import { createRuntimeStore } from "./runtime-store.mjs";
-import { answerQa, getQaHistory, getQaInbox, getQaResources, QaError, replyQa } from "./qa-service.mjs";
+import { answerQa, createQaSession, getQaHistory, getQaInbox, getQaResources, handoffQa, QaError, replyQa } from "./qa-service.mjs";
 import { createTaskService, TaskError } from "./task-service.mjs";
 import {
   createAuthService,
@@ -18,6 +18,7 @@ import { createExportService, ExportError } from "./export-service.mjs";
 import { json, readJsonBody } from "./http-utils.mjs";
 import { createSandboxManager } from "./sandbox-manager.mjs";
 import { createStaticHandler } from "./static-service.mjs";
+import { createLearningService, LearningError } from "./learning-service.mjs";
 import {
   authorizeStudentOffering,
   authorizeStudentSelf,
@@ -141,7 +142,7 @@ function createLoginLimiter() {
   return { check, success };
 }
 
-async function handleApi(request, url, runtimeStore, taskService, authService, exportService, baseDb, prefetchedLoginBody, sandboxed = false) {
+async function handleApi(request, url, runtimeStore, taskService, authService, exportService, learningService, baseDb, prefetchedLoginBody, sandboxed = false) {
   let resolvedSession;
   const session = () => {
     resolvedSession ||= authService.resolve(request);
@@ -293,6 +294,56 @@ async function handleApi(request, url, runtimeStore, taskService, authService, e
     });
   }
 
+  const teacherClassStudentsMatch = /^\/api\/teacher\/classes\/(\d+)\/students$/.exec(url.pathname);
+  if (request.method === "GET" && teacherClassStudentsMatch) {
+    try {
+      const current = session();
+      const context = `teacher:${Number(url.searchParams.get("offeringId"))}:${Number(teacherClassStudentsMatch[1])}`;
+      authorizeTeacherContext(baseDb, current, context);
+      const data = learningService.listStudents(context);
+      return json({ success:true, source:"sqlite_live", updatedAt:new Date().toISOString(), data }, 200, { "cache-control":"no-store" });
+    } catch (error) { if (error instanceof LearningError || error.code) return apiError(error); throw error; }
+  }
+
+  const teacherObservationMatch = /^\/api\/teacher\/students\/(S\d{6,})\/observation$/.exec(url.pathname);
+  if (request.method === "GET" && teacherObservationMatch) {
+    try {
+      const current = session();
+      const context = cleanText(url.searchParams.get("context"),80);
+      authorizeTeacherContext(baseDb,current,context);
+      const data = await learningService.observation(context,teacherObservationMatch[1],current.actorRefId);
+      return json({ success:true, source:"sqlite_live", updatedAt:new Date().toISOString(), data },200,{"cache-control":"no-store"});
+    } catch (error) { if (error instanceof LearningError || error.code) return apiError(error); throw error; }
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/student/sharing-preferences") {
+    try {
+      const current=session(); requireRole(current,"student");
+      const offeringId=authorizeStudentOffering(baseDb,current,url.searchParams.get("offeringId"));
+      return json({success:true,data:learningService.getStudentPreferences(current.actorRefId,offeringId)},200,{"cache-control":"no-store"});
+    } catch(error){if(error instanceof LearningError||error.code)return apiError(error);throw error;}
+  }
+
+  if (request.method === "PUT" && url.pathname === "/api/student/sharing-preferences") {
+    try {
+      const current=stateSession("student"),body=await readJsonBody(request),offeringId=authorizeStudentOffering(baseDb,current,body.offeringId);
+      const data=learningService.updateStudentPreferences(current.actorRefId,offeringId,body);
+      await recordAudit({actorRole:"student",accountId:current.accountId,action:"update_sharing_preferences",objectType:"student_sharing",objectRef:`${current.actorRefCode}:${offeringId}`,result:"success",version:data.version});
+      return json({success:true,data},200,{"cache-control":"no-store"});
+    } catch(error){if(error instanceof LearningError||error.code)return apiError(error);throw error;}
+  }
+
+  const personalDraftMatch=/^\/api\/teacher\/students\/(S\d{6,})\/plans\/drafts$/.exec(url.pathname);
+  if(request.method==="POST"&&personalDraftMatch){try{const current=stateSession("teacher"),body=await readJsonBody(request),context=cleanText(body.context,80);authorizeTeacherContext(baseDb,current,context);const data=learningService.createPlanDraft(context,personalDraftMatch[1]);return json({success:true,data},200,{"cache-control":"no-store"});}catch(error){if(error instanceof LearningError||error.code)return apiError(error);throw error;}}
+
+  const personalPlanMatch=/^\/api\/plans\/(pp_[0-9a-f-]+)$/.exec(url.pathname);
+  if(request.method==="PUT"&&personalPlanMatch){try{const current=stateSession("teacher"),body=await readJsonBody(request),context=cleanText(body.context,80);authorizeTeacherContext(baseDb,current,context);return json({success:true,data:learningService.updatePlan(context,personalPlanMatch[1],body)},200,{"cache-control":"no-store"});}catch(error){if(error instanceof LearningError||error.code)return apiError(error);throw error;}}
+
+  const personalPublishMatch=/^\/api\/plans\/(pp_[0-9a-f-]+)\/publish$/.exec(url.pathname);
+  if(request.method==="POST"&&personalPublishMatch){try{const current=stateSession("teacher"),body=await readJsonBody(request),context=cleanText(body.context,80);authorizeTeacherContext(baseDb,current,context);const data=learningService.publishPlan(context,personalPublishMatch[1]);await recordAudit({actorRole:"teacher",accountId:current.accountId,action:"publish_personal_plan",objectType:"personal_plan",objectRef:data.planId,result:"success",context});return json({success:true,data},200,{"cache-control":"no-store"});}catch(error){if(error instanceof LearningError||error.code)return apiError(error);throw error;}}
+
+  if(request.method==="GET"&&url.pathname==="/api/student/plans/active"){try{const current=session();requireRole(current,"student");const offeringId=authorizeStudentOffering(baseDb,current,url.searchParams.get("offeringId"));return json({success:true,data:learningService.studentPlans(current.actorRefId,offeringId)},200,{"cache-control":"no-store"});}catch(error){if(error instanceof LearningError||error.code)return apiError(error);throw error;}}
+
   if (request.method === "GET" && url.pathname === "/api/qa/resources") {
     try {
       const current = session();
@@ -341,6 +392,26 @@ async function handleApi(request, url, runtimeStore, taskService, authService, e
       return json({ success: true, data }, 200, { "cache-control": "no-store" });
     } catch (error) { if (error.code) return apiError(error); throw error; }
   }
+
+  if (request.method === "POST" && url.pathname === "/api/qa/sessions") {
+    try {
+      const current=stateSession("student"),body=await readJsonBody(request),studentContext=authorizeStudentSelf(current,cleanText(body.studentContext,80)),offeringId=authorizeStudentOffering(baseDb,current,body.offeringId);
+      return json({success:true,data:createQaSession(baseDb,runtimeStore,studentContext,offeringId,cleanText(body.title||"新对话",80))},201,{"cache-control":"no-store"});
+    } catch(error){if(error instanceof QaError||error.code)return apiError(error);throw error;}
+  }
+
+  const qaSessionMessageMatch=/^\/api\/qa\/sessions\/(qs_[0-9a-f-]+)\/messages$/.exec(url.pathname);
+  if(request.method==="POST"&&qaSessionMessageMatch){
+    try{
+      const current=stateSession("student"),body=await readJsonBody(request),studentContext=authorizeStudentSelf(current,cleanText(body.studentContext,80)),offeringId=authorizeStudentOffering(baseDb,current,body.offeringId),question=String(body.question??"").trim();
+      if(!question)throw new QaError("EMPTY_QUESTION","请输入需要解答的问题。");if(question.length>500)throw new QaError("QUESTION_TOO_LONG","问题不能超过 500 字。");if(PROMPT_INJECTION.some(pattern=>pattern.test(question)))throw new QaError("PROMPT_INJECTION_BLOCKED","问题包含越权指令，已拦截。请改为询问课程知识点。");
+      const safeQuestion=redactText(question),data=await answerQa({db:baseDb,runtimeStore,tutor:skills.tutor,studentContext,offeringId,question:safeQuestion,clientRequestId:body.clientRequestId,studentLevel:cleanText(body.studentLevel||"普通",20),piiRedacted:safeQuestion!==question,audit:recordAudit,sessionId:qaSessionMessageMatch[1],personalizationBasis:Array.isArray(body.personalizationBasis)?body.personalizationBasis.map(x=>cleanText(x,80)).slice(0,4):[],autoHandoff:false,includeCommon:true});
+      return json({success:true,source:data.model_provider?.startsWith("openai-compatible")?"model_provider":"offline_knowledge_retrieval",data},200,{"cache-control":"no-store"});
+    }catch(error){if(error instanceof QaError||error.code)return apiError(error);throw error;}
+  }
+
+  const qaHandoffMatch=/^\/api\/qa\/(qa_[0-9a-f-]+)\/handoff$/.exec(url.pathname);
+  if(request.method==="POST"&&qaHandoffMatch){try{const current=stateSession("student"),body=await readJsonBody(request),studentContext=authorizeStudentSelf(current,cleanText(body.studentContext,80));return json({success:true,data:await handoffQa({runtimeStore,studentContext,questionId:qaHandoffMatch[1],audit:recordAudit})},200,{"cache-control":"no-store"});}catch(error){if(error instanceof QaError||error.code)return apiError(error);throw error;}}
 
   if (request.method === "POST" && url.pathname === "/api/qa") {
     try {
@@ -722,6 +793,7 @@ export function createZhixueServer({
     taskService: createTaskService({ baseDb, runtimeStore, audit: recordAudit }),
     authService: createAuthService({ baseDb, runtimeStore, secureCookie, trustProxy }),
     exportService: createExportService({ baseDb, runtimeStore, secondaryAudit: recordAudit, options: exportOptions }),
+    learningService: createLearningService({ baseDb, runtimeStore, skills, audit: recordAudit }),
   } : null;
   const sandboxManager = fixedRuntime ? null : createSandboxManager({
     root: sandboxRoot,
@@ -730,6 +802,7 @@ export function createZhixueServer({
     trustProxy,
     exportOptions,
     audit: recordAudit,
+    skills,
   });
   const server = createServer(async (request, response) => {
     try {
@@ -755,6 +828,7 @@ export function createZhixueServer({
           services.taskService,
           services.authService,
           services.exportService,
+          services.learningService,
           baseDb,
           loginBody,
           Boolean(sandboxManager),

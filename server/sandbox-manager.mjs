@@ -13,6 +13,7 @@ import { createAuthService, createSandboxId, normalizeSandboxId } from "./auth-s
 import { createExportService } from "./export-service.mjs";
 import { createRuntimeStore } from "./runtime-store.mjs";
 import { createTaskService } from "./task-service.mjs";
+import { createLearningService } from "./learning-service.mjs";
 
 const DEFAULT_TTL_HOURS = 24;
 const DEFAULT_IDLE_MINUTES = 15;
@@ -38,6 +39,7 @@ export function createSandboxManager({
   trustProxy,
   exportOptions,
   audit,
+  skills,
   ttlHours = process.env.ZHIXUE_SANDBOX_TTL_HOURS,
   idleMinutes = process.env.ZHIXUE_SANDBOX_IDLE_MINUTES,
   maxSandboxes = process.env.ZHIXUE_MAX_SANDBOXES,
@@ -77,8 +79,9 @@ export function createSandboxManager({
       secondaryAudit: audit,
       options: exportOptions,
     });
+    const learningService = createLearningService({ baseDb, runtimeStore, skills, audit });
     const now = Date.now();
-    const entry = { id, path, runtimeStore, taskService, authService, exportService, lastAccess: now, lastTouch: 0 };
+    const entry = { id, path, runtimeStore, taskService, authService, exportService, learningService, lastAccess: now, lastTouch: 0 };
     touch(entry, now);
     active.set(id, entry);
     return entry;

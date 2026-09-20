@@ -8,6 +8,11 @@ const SKILL_FILES = [
   "classroom-interaction-generator.js",
   "course-content-optimizer.js",
   "teacher-answer-manager.js",
+  "knowledge-base-curator.js",
+  "student-profile-analyzer.js",
+  "personalized-learning-planner.js",
+  "exercise-coach.js",
+  "learning-effect-evaluator.js",
   "skill-registry.js",
 ];
 
@@ -42,6 +47,11 @@ function loadZhixueSkills(skillDir) {
     "ZhixueSkillInteraction",
     "ZhixueSkillContentOptimizer",
     "ZhixueSkillAnswerManager",
+    "ZhixueSkillKnowledgeCurator",
+    "ZhixueSkillStudentProfile",
+    "ZhixueSkillLearningPlanner",
+    "ZhixueSkillExerciseCoach",
+    "ZhixueSkillEffectEvaluator",
     "ZhixueSkillRegistry",
   ];
   for (const name of expected) {
@@ -56,6 +66,11 @@ function loadZhixueSkills(skillDir) {
     interaction: runtime.ZhixueSkillInteraction,
     optimizer: runtime.ZhixueSkillContentOptimizer,
     answerManager: runtime.ZhixueSkillAnswerManager,
+    knowledgeCurator: runtime.ZhixueSkillKnowledgeCurator,
+    studentProfile: runtime.ZhixueSkillStudentProfile,
+    learningPlanner: runtime.ZhixueSkillLearningPlanner,
+    exerciseCoach: runtime.ZhixueSkillExerciseCoach,
+    effectEvaluator: runtime.ZhixueSkillEffectEvaluator,
     registry: runtime.ZhixueSkillRegistry,
   };
 }

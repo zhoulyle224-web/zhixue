@@ -34,6 +34,17 @@ export function authorizeTeacherOffering(db, session, offeringId) {
   return id;
 }
 
+export function authorizeTeacherStudent(db, session, context, studentNo) {
+  const parsed = authorizeTeacherContext(db, session, context);
+  const row = db.prepare(`SELECT s.id,s.student_no,s.display_name,s.class_id,e.offering_id
+    FROM students s JOIN enrollments e ON e.student_id=s.id AND e.status<>'退选'
+    JOIN offering_classes oc ON oc.offering_id=e.offering_id AND oc.class_id=s.class_id
+    WHERE e.offering_id=? AND s.class_id=? AND s.student_no=?`)
+    .get(parsed.offeringId, parsed.classId, String(studentNo || ""));
+  if (!row) throw new AuthError("AUTH_STUDENT_SCOPE_FORBIDDEN", "该学生不在当前教师的课程班级范围内。", 403);
+  return { ...parsed, student: row };
+}
+
 export function authorizeStudentSelf(session, studentContext) {
   requireRole(session, "student");
   const expected = "student:" + session.actorRefCode;

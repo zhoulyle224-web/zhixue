@@ -28,18 +28,16 @@ test("页面保留本地演示和导出入口", async () => {
   assert.match(html, /导出/);
 });
 
-test("教师 M2 页面使用真实导入与研判接口，不再展示固定质检", async () => {
+test("教师主路径直接读取班级与学生数据，外部导入降级为高级说明", async () => {
   const teacher = await readFile(new URL("teacher.html", root), "utf8");
   const app = await readFile(new URL("assets/app.js", root), "utf8");
-  for (const id of ["dataFile", "loadSample", "qualityTable", "qualitySummary", "qualityScore", "ignoreWarnings", "startAnalysis", "refreshAnalysis", "analysisEvidence", "skillStatus"]) {
+  for (const id of ["teacherStudentList", "studentObservation", "personalPlanEditor", "refreshStudents", "analysisEvidence", "skillStatus"]) {
     assert.match(teacher, new RegExp(`id="${id}"`));
   }
-  assert.match(app, /api\/import\/validate/);
-  assert.match(app, /api\/import\/latest/);
-  assert.match(app, /api\/analyze/);
-  assert.doesNotMatch(app, /qualityResult\(|showQuality\(|ZhixueSkillAnalyzer\?\.fromState/);
-  assert.doesNotMatch(teacher, /质量 94%/);
-  assert.match(teacher, /合成演示数据/);
+  assert.match(app, /api\/teacher\/classes\/\$\{currentClass\(\)\.classId\}\/students/);
+  assert.match(app, /api\/teacher\/students\/\$\{encodeURIComponent\(studentNo\)\}\/observation/);
+  assert.doesNotMatch(teacher, /id="dataFile"|id="loadSample"|id="qualityTable"/);
+  assert.match(teacher, /高级数据管理（管理员补录）/);
 });
 
 test("教师 M2 证据区显示固定研判 ID，新导入时清除旧 ID", async () => {
