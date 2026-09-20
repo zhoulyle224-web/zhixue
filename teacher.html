@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="智学双擎教师端：按课程和班级导入数据、研判学情、发布分层任务">
-  <title>教师学情工作台｜智学双擎</title><link rel="stylesheet" href="assets/style.css"><link rel="stylesheet" href="assets/concept.css">
+  <title>教师学情工作台｜智学双擎</title><link rel="stylesheet" href="assets/style.css"><link rel="stylesheet" href="assets/concept.css"><link rel="stylesheet" href="assets/accessibility.css">
 </head>
 <body data-page="teacher" class="auth-pending concept-workspace"><canvas id="particles"></canvas><div class="orb one"></div><div class="orb two"></div>
 <nav class="topnav fixed workspace-nav"><a class="brand concept-brand" href="index.html"><span class="brand-symbol" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b></span><span>智学双擎<small>ZHIXUE DUAL ENGINE</small></span></a><p class="workspace-motto">让智慧的教学，<br>让每一位学生被看见。</p><div class="workspace-search"><span>⌕</span>搜索课程、班级或学生…</div><div class="user-actions"><button class="role-switch-btn" id="roleSwitchBtn" data-switch-role="student">切换学生视角</button><span class="notify-dot">♧<i>1</i></span><span class="user-chip"><i>教</i><b id="userIdentity">演示教师</b></span><button class="logout-btn" id="logoutBtn">退出</button></div></nav>
@@ -35,17 +35,16 @@
         <div class="term-card"><span>2026 学年</span><b>第一学期</b><small>教育教学</small></div>
       </article>
       <div class="process-banner"><div><span>当前教学闭环</span><b id="currentContext">人工智能导论 · 一班</b></div><div class="mini-flow"><span class="done">建课</span><i></i><span class="done">导入</span><i></i><span class="active">研判</span><i></i><span>发布</span><i></i><span>复盘</span></div><button class="btn primary sm" onclick="openView('analysis')">查看研判结果</button></div>
-      <div class="grid four metric-grid"><article class="card metric"><small>已导入学生</small><b id="studentCount">36</b><span>匿名记录</span></article><article class="card metric"><small>平均掌握度</small><b id="masteryAvg">72%</b><span class="trend-up">较上次 +4%</span></article><article class="card metric"><small>薄弱知识点</small><b id="weakCount">3</b><span>需要课堂强化</span></article><article class="card metric"><small>待处理反馈</small><b id="pendingCount">0</b><span>问题与任务反馈</span></article></div>
+      <div class="grid four metric-grid"><article class="card metric"><small>当前学生数</small><b id="studentCount">--</b><span>服务端授权班级</span></article><article class="card metric"><small>平均掌握度</small><b id="masteryAvg">--</b><span>当前数据快照</span></article><article class="card metric"><small>薄弱知识点</small><b id="weakCount">--</b><span>当前数据快照</span></article><article class="card metric"><small>待处理反馈</small><b id="pendingCount">--</b><span>服务端问题与任务反馈</span></article></div>
       <div class="grid dashboard-grid">
         <article class="card panel"><div class="card-head"><div><h3>班级掌握概览</h3><small>最近一次作业、测验与互动数据综合</small></div><button class="link-btn" onclick="openView('analysis')">完整分析 →</button></div><div id="knowledgePreview" class="mastery-list"></div></article>
-        <article class="card panel"><div class="card-head"><div><h3>学生分层</h3><small>教师确认后可发布差异化任务</small></div></div><div class="tier-donut"><div class="donut"><b id="tierTotal">36</b><span>学生</span></div><div class="tier-legend"><span><i class="tier-a"></i>拓展组 <b id="tierA">8</b></span><span><i class="tier-b"></i>提升组 <b id="tierB">17</b></span><span><i class="tier-c"></i>巩固组 <b id="tierC">11</b></span></div></div><button class="btn sm block" onclick="openView('tasks')">查看分层任务方案</button></article>
+        <article class="card panel"><div class="card-head"><div><h3>学生分层</h3><small>当前课程与班级的服务端数据</small></div></div><div class="tier-donut"><div class="donut"><b id="tierTotal">--</b><span>学生</span></div><div class="tier-legend"><span><i class="tier-a"></i>拓展组 <b id="tierA">--</b></span><span><i class="tier-b"></i>提升组 <b id="tierB">--</b></span><span><i class="tier-c"></i>巩固组 <b id="tierC">--</b></span></div></div><button class="btn sm block" onclick="openView('tasks')">查看分层任务方案</button></article>
       </div>
-      <div class="card panel action-panel"><div class="card-head"><div><h3>下一步建议</h3><small>所有建议均需教师确认</small></div><span class="ai-label">✦ 智能研判</span></div><div class="action-list"><button onclick="openView('import')"><b>1</b><span><strong>先处理 3 条数据质量提醒</strong><small>存在 1 条重复记录与 2 个空值</small></span><i>→</i></button><button onclick="openView('analysis')"><b>2</b><span><strong>强化“模型评估”知识点</strong><small>班级掌握度 54%，为当前最薄弱项</small></span><i>→</i></button><button onclick="openView('tasks')"><b>3</b><span><strong>确认并发布分层任务</strong><small>已为三个学习层次生成草案</small></span><i>→</i></button></div></div>
+      <div class="card panel action-panel"><div class="card-head"><div><h3>下一步建议</h3><small>根据当前批次、研判和任务状态实时生成</small></div><span class="ai-label">✦ 当前数据</span></div><div class="action-list" id="teacherNextActions"><p class="data-empty">正在读取当前班级数据…</p></div></div>
     </section>
 
     <section class="view" id="classes">
-      <div class="section-title"><div><h2>课程与班级</h2><p>先建立课程，再为同一课程划分不同班级；所有数据、分析与任务按班级隔离。</p></div><button class="btn primary" id="showCreateCourse">＋ 新建课程</button></div>
-      <div class="course-builder card panel" id="courseBuilder"><div class="form-row"><input class="field" id="newCourseName" placeholder="课程名称，例如：数据结构"><input class="field" id="newCourseCode" placeholder="课程邀请码，例如：DS2026"><button class="btn primary" id="createCourse">创建课程</button></div></div>
+      <div class="section-title"><div><h2>课程与班级</h2><p>课程和班级来自当前服务端授权目录，刷新后仍保持一致。</p></div><span class="readonly-note">只读演示：暂不提供新建课程或班级</span></div>
       <div id="teacherCourseGrid" class="teacher-course-grid"></div>
     </section>
 
@@ -92,7 +91,7 @@
     <section class="view" id="reports">
       <div class="section-title"><div><h2>报告与教学复盘</h2><p>导出班级学情、答疑记录与改进建议，保留关键结论的数据来源。</p></div></div>
       <div class="grid three report-grid"><article class="card panel"><span class="report-icon">▦</span><h3>班级学情报告</h3><p>知识点掌握、学生分层、异常数据和教学建议。</p><button class="btn primary sm" data-export="report">导出报告</button></article><article class="card panel"><span class="report-icon">✉</span><h3>答疑记录</h3><p>学生问题、资料依据、教师回复和处理状态。</p><button class="btn sm" data-export="questions">导出记录</button></article><article class="card panel"><span class="report-icon">↻</span><h3>教学复盘清单</h3><p>本轮调整、任务完成结果与下一步行动。</p><button class="btn sm" data-export="review">导出清单</button></article></div>
-      <article class="card panel timeline-card"><div class="card-head"><h3>教学改进时间线</h3><small>最近一轮</small></div><div class="timeline"><div><i></i><b>8 月 20 日 · 导入数据</b><p>载入最近一次测验、作业和课堂互动数据。</p></div><div><i></i><b>8 月 21 日 · 完成研判</b><p>识别 3 个薄弱知识点与 11 名巩固组学生。</p></div><div><i></i><b>8 月 22 日 · 发布任务</b><p>向三个学习层次发布差异化复习任务。</p></div><div><i></i><b>待完成 · 反馈复盘</b><p>收集任务结果与高频问题，验证教学调整效果。</p></div></div></article>
+      <article class="card panel timeline-card"><div class="card-head"><h3>教学改进时间线</h3><small>当前批次与任务事件</small></div><div class="timeline" id="teacherTimeline"><p class="data-empty">暂无当前批次数据</p></div></article>
     </section>
   </main>
 </div>
@@ -105,6 +104,7 @@
 <script src="assets/skills/skill-registry.js"></script>
 <script src="assets/api-client.js"></script>
 <script src="assets/qa-client.js"></script>
+<script src="assets/dialog.js"></script>
 <script src="assets/task-client.js?v=m3"></script>
 <script src="assets/app.js"></script>
 <script src="assets/export-client.js"></script>

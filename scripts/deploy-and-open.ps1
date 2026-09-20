@@ -42,8 +42,17 @@ function Find-AvailablePort {
   throw "端口 $StartPort 到 $EndPort 均被占用，请关闭占用程序后重试。"
 }
 
-if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-  throw "未找到 Node.js。请安装 Node.js 22.13 或更高版本后重试。"
+$bundledNode = Join-Path $root "runtime\node.exe"
+if (Test-Path -LiteralPath $bundledNode) {
+  $nodeExecutable = $bundledNode
+  Write-Step "使用项目内置 Node 运行环境。"
+} else {
+  $systemNode = Get-Command node -ErrorAction SilentlyContinue
+  if (-not $systemNode) {
+    throw "运行环境不完整：未找到 runtime\node.exe，也未检测到系统 Node.js。请重新解压完整免安装包。"
+  }
+  $nodeExecutable = $systemNode.Source
+  Write-Step "未发现内置运行环境，使用系统 Node.js。"
 }
 
 $runtimeDirectory = Join-Path $root "data\runtime"
@@ -56,7 +65,7 @@ $url = "http://127.0.0.1:$port/"
 if (-not $selection.Reuse) {
   Write-Step "正在启动本地服务，端口 $port..."
   $process = Start-Process `
-    -FilePath "node" `
+    -FilePath $nodeExecutable `
     -ArgumentList @("server/local-api.mjs", "--host", "127.0.0.1", "--port", "$port") `
     -WorkingDirectory $root `
     -WindowStyle Hidden `

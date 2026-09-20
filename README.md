@@ -12,7 +12,7 @@
 
 ## 30 秒启动与验收
 
-要求 Node.js 22.13 或更高版本；本地正式路径不需要联网，也不需要执行 `npm install`。
+面向普通 Windows 用户的发布 ZIP 已内置 Node.js，解压后不需要安装依赖，也不需要联网；源码开发环境要求 Node.js 22.13 或更高版本。
 
 ```bash
 node server/local-api.mjs --port 8080
@@ -48,7 +48,7 @@ node scripts/prepare-submission.mjs
 
 ## 一键启动
 
-Windows 可双击 `deploy-and-open.bat` 或 `一键部署并打开.bat`。脚本仅在 8080～8090 中选择空闲端口或复用已识别的智学双擎实例，不会终止无关进程。
+Windows 发布包解压后可直接双击 `deploy-and-open.bat` 或 `一键部署并打开.bat`。脚本优先使用包内 `runtime/node.exe`，仅在源码目录缺少内置运行环境时才回退到系统 Node.js；它只在 8080～8090 中选择空闲端口或复用已识别的智学双擎实例，不会终止无关进程。
 
 也可使用：
 

@@ -1,0 +1,17 @@
+/* 统一页面内确认窗口：用于任务发布、撤回与完成，避免浏览器原生弹窗。 */
+.zhixue-dialog-shell{position:fixed;inset:0;z-index:1200;display:grid;place-items:center;padding:24px;background:rgba(2,10,24,.72);backdrop-filter:blur(8px)}
+.zhixue-dialog-shell[hidden]{display:none}.zhixue-dialog-card{position:relative;width:min(520px,100%);padding:28px;border:1px solid rgba(118,151,198,.35);border-radius:20px;background:#10213a;color:#eef5ff;box-shadow:0 28px 90px rgba(0,0,0,.46)}
+.zhixue-dialog-card h2{margin:7px 0 9px;font-size:24px}.zhixue-dialog-card>p{margin:0 0 18px;color:#b8c8dd;font-size:14px;line-height:1.7}.zhixue-dialog-close{position:absolute;right:16px;top:14px;border:0;background:transparent;color:#9db0c8;font-size:25px}
+.zhixue-dialog-details{display:grid;gap:8px;margin:0 0 18px}.zhixue-dialog-details>div{display:flex;justify-content:space-between;gap:20px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.045);font-size:13px}.zhixue-dialog-details span{color:#91a6c0}.zhixue-dialog-details b{text-align:right}
+.zhixue-dialog-card label{display:grid;gap:8px;color:#b9c9dd;font-size:13px}.zhixue-dialog-card textarea{min-height:92px;padding:12px;border:1px solid rgba(117,149,192,.34);border-radius:11px;background:#0a192d;color:#fff;font:inherit;resize:vertical}.zhixue-dialog-card label small{min-height:18px;color:#ff9dac;font-size:12px}.zhixue-dialog-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}.zhixue-dialog-actions .danger{background:#d84b62;border-color:#e36d7f}
+
+/* 课堂投屏可读性下限：正文 14px、说明 12px、按钮 13px。 */
+.concept-workspace .content p,.concept-workspace .content li,.concept-workspace .content td,.concept-workspace .content th{font-size:14px!important}
+.concept-workspace .content small,.concept-workspace .content em,.concept-workspace .content .eyebrow,.concept-workspace .content .badge,.concept-workspace .content .ai-label{font-size:12px!important}
+.concept-workspace button,.concept-workspace input,.concept-workspace textarea,.concept-workspace select,.concept-workspace label{font-size:13px!important}
+.concept-workspace .sidebar,.concept-workspace .topnav{font-size:13px}.readonly-note{display:inline-flex;align-items:center;gap:7px;padding:9px 12px;border:1px solid rgba(108,142,187,.28);border-radius:10px;color:#9eb0c7;background:rgba(255,255,255,.025);font-size:12px}
+.concept-home-page main p,.concept-login main p{font-size:max(14px,1em)!important;line-height:1.55}
+.concept-home-page main small,.concept-home-page main em,.concept-home-page main li,.concept-login main small,.concept-login main em,.concept-login main li{font-size:12px!important}
+.concept-home-page button,.concept-home-page a,.concept-login button,.concept-login input,.concept-login label,.concept-login a{font-size:max(13px,1em)}
+.concept-home-page .topnav,.concept-login .topnav{font-size:13px}
+.data-empty{color:#91a5bf!important}.export-print-preview{display:grid;gap:12px;margin-top:14px}.export-print-preview[hidden]{display:none}.export-print-meta{display:flex;flex-wrap:wrap;gap:8px;color:#8da3bd;font-size:12px}.export-print-frame{width:100%;height:min(58vh,620px);border:1px solid var(--line);border-radius:12px;background:#fff}

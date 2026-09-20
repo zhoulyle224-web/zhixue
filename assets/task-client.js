@@ -73,6 +73,7 @@
     if(byId('taskVersionHistory'))byId('taskVersionHistory').innerHTML=versions.length?versions.map(item=>`<div><b>v${item.versionNo} · ${safe({draft:'草案',published:'已发布',superseded:'已替代',revoked:'已撤回'}[item.status]||item.status)}</b><span>${safe(item.publishedAt?new Date(item.publishedAt).toLocaleString('zh-CN'):new Date(item.createdAt).toLocaleString('zh-CN'))}</span><small>来源 ${safe(item.sourceAnalysisRunId)} · 内容哈希 ${safe((item.contentDigest||'草案待生成').slice(0,12))}</small></div>`).join(''):'<p>暂无发布版本。</p>';
     const current=versions.find(item=>item.versionId===version.versionId)||version;
     renderFeedback(current);
+    window.dispatchEvent(new CustomEvent('zhixue:teacher-task-state',{detail:{version:current,versions,context:teacher.context}}));
   }
   function renderFeedback(version){
     const box=byId('taskFeedbackSummary');if(!box)return;
@@ -112,8 +113,17 @@
   async function publishDraft(){
     const saved=await saveDraft();if(!saved)return;
     const c=saved.coverage;
-    const summary=`将向本次研判覆盖的 ${c.analysisStudents} 名学生发布 v${saved.versionNo}：\n拓展组 ${saved.tiers.extension} 人\n提升组 ${saved.tiers.improvement} 人\n巩固组 ${saved.tiers.consolidation} 人\n截止 ${new Date(saved.dueAt).toLocaleString('zh-CN')}\n\n确认发布？`;
-    if(!confirm(summary))return;
+    const approved=await window.ZhixueDialog.ask({
+      title:`发布任务版本 v${saved.versionNo}`,
+      message:'发布后，学生端会立即看到当前版本。请核对覆盖人数和截止时间。',
+      acceptLabel:'确认发布',
+      details:[
+        {label:'覆盖范围',value:`${c.analysisStudents} 名学生`},
+        {label:'分层人数',value:`拓展 ${saved.tiers.extension} / 提升 ${saved.tiers.improvement} / 巩固 ${saved.tiers.consolidation}`},
+        {label:'截止时间',value:new Date(saved.dueAt).toLocaleString('zh-CN')},
+      ],
+    });
+    if(!approved)return;
     teacher.busy=true;renderTeacher();
     try{
       await post(`/api/tasks/drafts/${encodeURIComponent(saved.versionId)}/publish`,{
@@ -130,8 +140,16 @@
   }
   async function revoke(){
     if(!teacher.version||teacher.version.status!=='published')return;
-    const reason=prompt('请输入撤回理由（1–200 字）','任务内容需调整');if(!reason)return;
-    if(!confirm('撤回后未完成学生将不再看到该任务；已有完成记录和反馈仍保留。确认撤回？'))return;
+    const reason=await window.ZhixueDialog.input({
+      title:`撤回任务版本 v${teacher.version.versionNo}`,
+      message:'撤回后未完成学生将不再看到该任务，已有完成记录和反馈仍会保留。',
+      inputLabel:'撤回理由（1–200 字）',
+      initialValue:'任务内容需调整',
+      acceptLabel:'确认撤回',
+      tone:'danger',
+      details:[{label:'影响范围',value:'当前已发布版本'}, {label:'保留内容',value:'完成记录与学生反馈'}],
+    });
+    if(!reason)return;
     try{await post(`/api/tasks/versions/${teacher.version.versionId}/revoke`,{context:teacher.context,reason});notify(`v${teacher.version.versionNo} 已撤回，完成记录仍保留`);await refreshTeacher(teacher.context,teacher.analysisRunId)}
     catch(error){teacher.error=error.message;renderTeacher();notify(error.message)}
   }
@@ -148,6 +166,7 @@
     setText('studentProgress',`${rate}%`);
     const first=tasks[0];setText('studentTaskTier',first?`当前：${first.tierLabel}`:'当前：暂无有效任务');setText('studentTaskGoal',first?`本轮重点：${first.source?.weakestKnowledgePoint||first.title}`:'等待教师基于研判确认并发布。');
     box.innerHTML=tasks.length?tasks.map((task,index)=>`<article class="card personal-task ${task.completionStatus==='completed'?'done':''}"><div class="task-number">${task.completionStatus==='completed'?'✓':String(index+1).padStart(2,'0')}</div><div class="task-info"><span>${safe(task.tierLabel)} · v${task.versionNo} · 建议 ${task.durationMinutes} 分钟</span><h3>${safe(task.title)}</h3><p>${safe(task.detail)}</p><div class="task-tags"><i>截止 ${safe(new Date(task.dueAt).toLocaleString('zh-CN'))}</i><i>薄弱点：${safe(task.source?.weakestKnowledgePoint)}</i></div><p class="task-origin">本任务由教师基于最近一次学情研判确认发布。</p>${task.completionStatus==='completed'?'<b class="completed-label">已完成并持久化</b>':`<label class="task-feedback-input">完成反馈（可选，最多 500 字）<textarea id="feedback-${safe(task.assignmentId)}" maxlength="500" placeholder="例如：已完成练习，仍不理解……"></textarea></label><button class="btn primary" onclick="ZhixueTaskClient.complete('${safe(task.assignmentId)}')">完成任务</button>`}</div></article>`).join(''):'<div class="card panel"><b>教师尚未发布当前有效任务</b><p>发布后会通过本地服务出现在这里；静态页面不会创建假任务。</p></div>';
+    window.dispatchEvent(new CustomEvent('zhixue:student-task-state',{detail:{tasks,history:student.history||[],done,total:tasks.length,rate,offeringId:student.offeringId}}));
   }
   function renderStudentHistory(){
     const box=byId('runtimeTaskHistory');if(!box)return;
@@ -167,6 +186,13 @@
   async function complete(assignmentId){
     const task=student.active.find(item=>item.assignmentId===assignmentId);if(!task||student.busy)return;
     const field=byId(`feedback-${assignmentId}`),feedback=field?.value||'';
+    const approved=await window.ZhixueDialog.ask({
+      title:'确认完成任务',
+      message:'提交后完成状态与反馈会写入服务端，并同步给教师。',
+      acceptLabel:'确认提交',
+      details:[{label:'任务',value:task.title}, {label:'截止时间',value:new Date(task.dueAt).toLocaleString('zh-CN')}, {label:'反馈',value:feedback.trim()?'将一并提交':'未填写'}],
+    });
+    if(!approved)return;
     student.busy=true;renderStudentTasks();
     try{
       await post(`/api/tasks/assignments/${encodeURIComponent(assignmentId)}/complete`,{

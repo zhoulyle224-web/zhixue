@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { cp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { copyFile, cp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 
 const ROOT = resolve(import.meta.dirname, "..");
@@ -73,6 +73,13 @@ async function main() {
     await copyPath(join(ROOT, "data", name), join(resolvedStaging, "data", name));
   }
 
+  const bundledNodeRuntime = process.platform === "win32";
+  if (bundledNodeRuntime) {
+    const runtimeDirectory = join(resolvedStaging, "runtime");
+    await mkdir(runtimeDirectory, { recursive: true });
+    await copyFile(process.execPath, join(runtimeDirectory, "node.exe"));
+  }
+
   const runId = (await readFile(join(ROOT, "evidence", "m6", "LATEST.txt"), "utf8")).trim();
   const evidenceSource = join(ROOT, "evidence", "m6", runId);
   const evidenceTarget = join(resolvedStaging, "evidence", "m6", runId);
@@ -87,7 +94,8 @@ async function main() {
     createdAt: new Date().toISOString(),
     dataClassification: "synthetic-demo-only",
     coreScenarios: ["学生课后即时答疑", "教师学情智能研判"],
-    localRuntime: "Node.js >= 22.13",
+    localRuntime: bundledNodeRuntime ? `Bundled Node.js ${process.version} for Windows x64` : "Node.js >= 22.13",
+    bundledNodeRuntime,
     publicRuntime: "展示版能力受限；正式写操作仅在本地 Node 版提供",
     m6FinalRunId: runId,
     m6SummarySha256: await sha256(join(evidenceSource, "summary.md")),
