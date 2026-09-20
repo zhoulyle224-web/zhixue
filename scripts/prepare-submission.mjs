@@ -7,7 +7,7 @@ const ROOT = resolve(import.meta.dirname, "..");
 const RELEASE_ROOT = join(ROOT, "release");
 const STAGING = join(RELEASE_ROOT, "智学双擎_参赛提交版");
 const ROOT_FILES = [
-  ".dockerignore", ".gitignore", ".nojekyll", "404.html", "Dockerfile", "compose.yaml",
+  ".dockerignore", ".gitattributes", ".gitignore", ".nojekyll", "404.html", "Dockerfile", "compose.yaml",
   "deploy-and-open.bat", "一键部署并打开.bat", "index.html", "login.html", "student.html",
   "teacher.html", "package.json", "package-lock.json", "README.md",
 ];
@@ -62,6 +62,11 @@ async function main() {
     const source = join(ROOT, name);
     if (!(await exists(source))) throw new Error(`缺少源码文件：${name}`);
     await copyPath(source, join(resolvedStaging, name));
+  }
+  for (const name of ["deploy-and-open.bat", "一键部署并打开.bat"]) {
+    const target = join(resolvedStaging, name);
+    const content = await readFile(target, "utf8");
+    await writeFile(target, content.replace(/\r?\n/g, "\r\n"), "utf8");
   }
   for (const name of DIRECTORIES) {
     const source = join(ROOT, name);

@@ -57,9 +57,13 @@ test('四个页面加载统一可读性样式',async()=>{
 });
 
 test('Windows 发布包内置 Node 并被一键脚本优先使用',async()=>{
-  const [prepare,deploy,start]=await Promise.all([read('scripts/prepare-submission.mjs'),read('scripts/deploy-and-open.ps1'),read('scripts/start-zhixue.ps1')]);
+  const [prepare,deploy,start,batch,attributes]=await Promise.all([read('scripts/prepare-submission.mjs'),read('scripts/deploy-and-open.ps1'),read('scripts/start-zhixue.ps1'),read('deploy-and-open.bat'),read('.gitattributes')]);
   assert.match(prepare,/copyFile\(process\.execPath, join\(runtimeDirectory, "node\.exe"\)\)/);
   assert.match(prepare,/bundledNodeRuntime/);
+  assert.match(prepare,/content\.replace\(\/\\r\?\\n\/g, "\\r\\n"\)/);
+  assert.match(attributes,/\*\.bat text eol=crlf/);
+  assert.match(batch,/完整解压 ZIP/);
+  assert.match(batch,/powershell\.exe -NoLogo -NoProfile -NonInteractive/);
   for(const script of [deploy,start]){
     assert.match(script,/runtime\\node\.exe/);
     assert.match(script,/Test-Path -LiteralPath \$bundledNode/);
