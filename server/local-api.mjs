@@ -1,4 +1,5 @@
 import { appendFile, mkdir, readFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
@@ -19,6 +20,9 @@ import { json, readJsonBody } from "./http-utils.mjs";
 import { createSandboxManager } from "./sandbox-manager.mjs";
 import { createStaticHandler } from "./static-service.mjs";
 import { createLearningService, LearningError } from "./learning-service.mjs";
+import { createAiService, AiServiceError } from "./ai-service.mjs";
+import { createModelGateway } from "./model-gateway.mjs";
+import { createSecretStore } from "./secret-store.mjs";
 import {
   authorizeStudentOffering,
   authorizeStudentSelf,
@@ -33,7 +37,8 @@ const { loadZhixueSkills } = require("./skill-runtime.cjs");
 const ROOT = resolve(fileURLToPath(new URL(".", import.meta.url)), "..");
 const ASSETS_ROOT = resolve(ROOT, "assets");
 const DATA_ROOT = resolve(ROOT, "data");
-const RUNTIME_ROOT = resolve(process.env.ZHIXUE_DATA_DIR || resolve(DATA_ROOT, "runtime"));
+const RUNTIME_ENVIRONMENT = process.env.ZHIXUE_ENVIRONMENT || "demo";
+const RUNTIME_ROOT = resolve(process.env.ZHIXUE_DATA_DIR || resolve(DATA_ROOT, "runtime", RUNTIME_ENVIRONMENT));
 const DATABASE_PATH = resolve(DATA_ROOT, "zhixue_demo.sqlite");
 // Actor-level snapshots stay server-private; /assets/demo-data.json is public-safe only.
 const READ_MODEL_PATH = resolve(DATA_ROOT, "web_snapshots.json");
@@ -85,7 +90,7 @@ function validateContext(audience, context) {
 
 async function recordAudit(event) {
   try {
-    await mkdir(resolve(DATA_ROOT, "runtime"), { recursive: true });
+    await mkdir(RUNTIME_ROOT, { recursive: true });
     await appendFile(
       AUDIT_PATH,
       `${JSON.stringify({
@@ -106,6 +111,25 @@ function apiError(error) {
     message: error.message,
     ...(error.details || {}),
   }, error.status || (error.code === "PAYLOAD_TOO_LARGE" ? 413 : 400));
+}
+
+function v1Success(data, { requestId = `req_${randomUUID()}`, modelRunId = null, persisted = true, status = 200 } = {}) {
+  return json({ success: true, requestId, data, meta: { sourceVersion: "round3-v1", modelRunId, persisted } }, status);
+}
+
+function v1Error(error, requestId = `req_${randomUUID()}`) {
+  const details = error.details || {};
+  return json({
+    success: false,
+    requestId,
+    error: {
+      code: error.code || "INVALID_REQUEST",
+      message: error.message,
+      saved: details.saved === true,
+      retryable: details.retryable === true,
+      ...(details.aiRunId ? { aiRunId: details.aiRunId } : {}),
+    },
+  }, error.status || 400);
 }
 
 function createLoginLimiter() {
@@ -142,7 +166,7 @@ function createLoginLimiter() {
   return { check, success };
 }
 
-async function handleApi(request, url, runtimeStore, taskService, authService, exportService, learningService, baseDb, prefetchedLoginBody, sandboxed = false) {
+async function handleApi(request, url, runtimeStore, taskService, authService, exportService, learningService, aiService, baseDb, prefetchedLoginBody, sandboxed = false) {
   let resolvedSession;
   const session = () => {
     resolvedSession ||= authService.resolve(request);
@@ -154,6 +178,100 @@ async function handleApi(request, url, runtimeStore, taskService, authService, e
     authService.requireCsrf(request, current);
     return current;
   };
+  const requireAiAdmin = (current) => {
+    if (current.canManageAi !== true) {
+      const error = new AiServiceError("AUTH_AI_ADMIN_REQUIRED", "仅平台管理员可以查看或修改 AI 接口配置。", 403);
+      throw error;
+    }
+  };
+
+  if (request.method === "GET" && url.pathname === "/api/v1/admin/ai/status") {
+    const requestId = `req_${randomUUID()}`;
+    try {
+      const current = session();
+      requireAiAdmin(current);
+      return v1Success(await aiService.status(), { requestId });
+    } catch (error) { return v1Error(error, requestId); }
+  }
+
+  if (request.method === "PUT" && url.pathname === "/api/v1/admin/ai/key") {
+    const requestId = `req_${randomUUID()}`;
+    try {
+      const current = stateSession();
+      requireAiAdmin(current);
+      if (sandboxed) throw new AiServiceError("AI_CONFIG_DISABLED_IN_PUBLIC_SANDBOX", "公开演示空间不允许保存外部模型密钥。", 403);
+      const body = await readJsonBody(request, 8192);
+      const data = await aiService.configureKey(body.apiKey, current.accountId);
+      await recordAudit({ actorRole: current.role, accountId: current.accountId, action: "ai_key_verified", objectType: "ai_config", objectRef: "default", result: "success" });
+      return v1Success(data, { requestId });
+    } catch (error) { return v1Error(error, requestId); }
+  }
+
+  const aiRunMatch = /^\/api\/v1\/ai\/runs\/(airun_[0-9a-f-]+)$/.exec(url.pathname);
+  if (request.method === "GET" && aiRunMatch) {
+    const requestId = `req_${randomUUID()}`;
+    try {
+      const current = session();
+      const run = aiService.getRun(aiRunMatch[1]);
+      if (!run) throw new AiServiceError("AI_RUN_NOT_FOUND", "AI 运行记录不存在。", 404);
+      if (run.actorId !== current.accountId && current.canManageAi !== true) throw new AiServiceError("AI_RUN_FORBIDDEN", "无权查看该 AI 运行记录。", 403);
+      return v1Success(run, { requestId, modelRunId: run.aiRunId, persisted: run.status === "completed_persisted" });
+    } catch (error) { return v1Error(error, requestId); }
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/v1/admin/data/status") {
+    const requestId = `req_${randomUUID()}`;
+    try {
+      const current = session();
+      if (current.role !== "teacher") throw new AiServiceError("AUTH_ROLE_FORBIDDEN", "仅教师或管理员可以查看数据治理状态。", 403);
+      const context = cleanText(url.searchParams.get("context"), 80);
+      authorizeTeacherContext(baseDb, current, context);
+      return v1Success(runtimeStore.getGovernanceStatus(context), { requestId });
+    } catch (error) { return v1Error(error, requestId); }
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/v1/ai/qa/sessions") {
+    const requestId = `req_${randomUUID()}`;
+    try {
+      const current = stateSession("student");
+      const body = await readJsonBody(request);
+      const studentContext = authorizeStudentSelf(current, cleanText(body.studentContext, 80));
+      const offeringId = authorizeStudentOffering(baseDb, current, body.offeringId);
+      const data = createQaSession(baseDb, runtimeStore, studentContext, offeringId, cleanText(body.title || "新对话", 80));
+      return v1Success(data, { requestId, status: 201 });
+    } catch (error) { return v1Error(error, requestId); }
+  }
+
+  const v1QaMessageMatch = /^\/api\/v1\/ai\/qa\/sessions\/(qs_[0-9a-f-]+)\/messages$/.exec(url.pathname);
+  if (request.method === "POST" && v1QaMessageMatch) {
+    const requestId = `req_${randomUUID()}`;
+    try {
+      const current = stateSession("student");
+      const body = await readJsonBody(request);
+      const studentContext = authorizeStudentSelf(current, cleanText(body.studentContext, 80));
+      const qaSession = runtimeStore.getQaSession(v1QaMessageMatch[1]);
+      if (!qaSession || qaSession.student_context !== studentContext) throw new QaError("QA_SESSION_FORBIDDEN", "该问答会话不属于当前学生。", 403);
+      const offeringId = authorizeStudentOffering(baseDb, current, qaSession.offering_id);
+      const question = String(body.question ?? "").trim();
+      if (!question) throw new QaError("EMPTY_QUESTION", "请输入需要解答的问题。");
+      if (question.length > 500) throw new QaError("QUESTION_TOO_LONG", "问题不能超过 500 字。");
+      if (PROMPT_INJECTION.some((pattern) => pattern.test(question))) throw new QaError("PROMPT_INJECTION_BLOCKED", "问题包含越权指令，已拦截。请改为询问课程知识点。", 400);
+      const safeQuestion = redactText(question);
+      const data = await answerQa({
+        db: baseDb, runtimeStore, tutor: skills.tutor, studentContext, offeringId,
+        question: safeQuestion, clientRequestId: body.clientRequestId,
+        studentLevel: cleanText(body.studentLevel || "普通", 20),
+        piiRedacted: safeQuestion !== question, audit: recordAudit,
+        sessionId: v1QaMessageMatch[1], personalizationBasis: [], autoHandoff: false,
+        includeCommon: true, aiService, actorId: current.accountId, strictAi: true,
+        serviceRequestId: requestId,
+      });
+      return v1Success(data, {
+        requestId, modelRunId: data.ai_run_id,
+        persisted: data.ai_generated && data.generation_status === "completed_persisted",
+      });
+    } catch (error) { return v1Error(error, requestId); }
+  }
 
   if (request.method === "POST" && url.pathname === "/api/auth/login") {
     try {
@@ -347,7 +465,7 @@ async function handleApi(request, url, runtimeStore, taskService, authService, e
       const current = session();
       const studentContext = authorizeStudentSelf(current, cleanText(url.searchParams.get("studentContext"), 80));
       const offeringId = authorizeStudentOffering(baseDb, current, url.searchParams.get("offeringId"));
-      const data = await getQaResources(baseDb, studentContext, offeringId);
+      const data = await getQaResources(baseDb, studentContext, offeringId, aiService);
       return json({ success: true, data }, 200, { "cache-control": "no-store" });
     } catch (error) { if (error.code) return apiError(error); throw error; }
   }
@@ -403,7 +521,7 @@ async function handleApi(request, url, runtimeStore, taskService, authService, e
     try{
       const current=stateSession("student"),body=await readJsonBody(request),studentContext=authorizeStudentSelf(current,cleanText(body.studentContext,80)),offeringId=authorizeStudentOffering(baseDb,current,body.offeringId),question=String(body.question??"").trim();
       if(!question)throw new QaError("EMPTY_QUESTION","请输入需要解答的问题。");if(question.length>500)throw new QaError("QUESTION_TOO_LONG","问题不能超过 500 字。");if(PROMPT_INJECTION.some(pattern=>pattern.test(question)))throw new QaError("PROMPT_INJECTION_BLOCKED","问题包含越权指令，已拦截。请改为询问课程知识点。");
-      const safeQuestion=redactText(question),data=await answerQa({db:baseDb,runtimeStore,tutor:skills.tutor,studentContext,offeringId,question:safeQuestion,clientRequestId:body.clientRequestId,studentLevel:cleanText(body.studentLevel||"普通",20),piiRedacted:safeQuestion!==question,audit:recordAudit,sessionId:qaSessionMessageMatch[1],personalizationBasis:Array.isArray(body.personalizationBasis)?body.personalizationBasis.map(x=>cleanText(x,80)).slice(0,4):[],autoHandoff:false,includeCommon:true});
+      const safeQuestion=redactText(question),data=await answerQa({db:baseDb,runtimeStore,tutor:skills.tutor,studentContext,offeringId,question:safeQuestion,clientRequestId:body.clientRequestId,studentLevel:cleanText(body.studentLevel||"普通",20),piiRedacted:safeQuestion!==question,audit:recordAudit,sessionId:qaSessionMessageMatch[1],personalizationBasis:Array.isArray(body.personalizationBasis)?body.personalizationBasis.map(x=>cleanText(x,80)).slice(0,4):[],autoHandoff:false,includeCommon:true,aiService,actorId:current.accountId});
       return json({success:true,source:data.model_provider?.startsWith("openai-compatible")?"model_provider":"offline_knowledge_retrieval",data},200,{"cache-control":"no-store"});
     }catch(error){if(error instanceof QaError||error.code)return apiError(error);throw error;}
   }
@@ -428,7 +546,8 @@ async function handleApi(request, url, runtimeStore, taskService, authService, e
       const data = await answerQa({ db: baseDb, runtimeStore, tutor: skills.tutor,
         studentContext, offeringId, question: safeQuestion,
         clientRequestId: body.clientRequestId, studentLevel: cleanText(body.studentLevel || "普通", 20),
-        piiRedacted: safeQuestion !== question, audit: recordAudit });
+        piiRedacted: safeQuestion !== question, audit: recordAudit,
+        aiService, actorId: current.accountId });
       return json({ success: true, source: "local_skill", data }, 200, { "cache-control": "no-store" });
     } catch (error) { if (error.code) return apiError(error); throw error; }
   }
@@ -781,17 +900,22 @@ export function createZhixueServer({
   secureCookie,
   trustProxy = process.env.ZHIXUE_TRUST_PROXY === "1",
   exportOptions,
+  modelGateway: injectedModelGateway,
+  secretStore: injectedSecretStore,
 } = {}) {
   const baseDb = new DatabaseSync(baselineDbPath, { readOnly: true });
   const loginLimiter = createLoginLimiter();
   const fixedRuntime = Boolean(injectedRuntimeStore || runtimeDbPath);
   const runtimeStore = fixedRuntime ? (injectedRuntimeStore || createRuntimeStore(runtimeDbPath)) : null;
+  const modelGateway = injectedModelGateway || createModelGateway();
+  const secretStore = injectedSecretStore || createSecretStore({ root: runtimeDbPath ? null : resolve(RUNTIME_ROOT, "secrets") });
   const fixedServices = runtimeStore ? {
     runtimeStore,
     taskService: createTaskService({ baseDb, runtimeStore, audit: recordAudit }),
     authService: createAuthService({ baseDb, runtimeStore, secureCookie, trustProxy }),
     exportService: createExportService({ baseDb, runtimeStore, secondaryAudit: recordAudit, options: exportOptions }),
     learningService: createLearningService({ baseDb, runtimeStore, skills, audit: recordAudit }),
+    aiService: createAiService({ runtimeStore, modelGateway, secretStore }),
   } : null;
   const sandboxManager = fixedRuntime ? null : createSandboxManager({
     root: sandboxRoot,
@@ -818,6 +942,7 @@ export function createZhixueServer({
             sandboxId = normalizeSandboxId(loginBody.sandboxId) || sandboxManager.createId();
           }
           services = sandboxManager.get(sandboxId || PUBLIC_SANDBOX_ID);
+          services.aiService ||= createAiService({ runtimeStore: services.runtimeStore, modelGateway, secretStore });
         }
         result = await handleApi(
           request,
@@ -827,6 +952,7 @@ export function createZhixueServer({
           services.authService,
           services.exportService,
           services.learningService,
+          services.aiService,
           baseDb,
           loginBody,
           Boolean(sandboxManager),

@@ -75,21 +75,22 @@ export function createAuthService({
   const db = runtimeStore.taskDatabase;
   const normalizedSandboxId = normalizeSandboxId(sandboxId);
 
-  function seed(accountName, role, actorRefId, actorRefCode) {
+  function seed(accountName, role, actorRefId, actorRefCode, canManageAi = false) {
     const account = accountName.toLowerCase();
     if (db.prepare("SELECT 1 FROM runtime_auth_accounts WHERE account_name=?").get(account)) return;
     const salt = randomBytes(16).toString("base64");
     const now = new Date().toISOString();
     db.prepare(`INSERT INTO runtime_auth_accounts
-      (id,account_name,role,actor_ref_id,actor_ref_code,password_algo,password_salt,password_hash,disabled,created_at,updated_at)
-      VALUES (?,?,?,?,?,'scrypt-v1',?,?,0,?,?)`).run(
+      (id,account_name,role,actor_ref_id,actor_ref_code,password_algo,password_salt,password_hash,disabled,can_manage_ai,created_at,updated_at)
+      VALUES (?,?,?,?,?,'scrypt-v1',?,?,0,?,?,?)`).run(
       "acct_" + randomUUID(), account, role, actorRefId, actorRefCode,
-      salt, derivePassword("demo123", salt), now, now,
+      salt, derivePassword("demo123", salt), canManageAi ? 1 : 0, now, now,
     );
   }
 
-  seed("teacher2026", "teacher", 7, "T0007");
+  seed("teacher2026", "teacher", 7, "T0007", true);
   seed("student2026", "student", 1, "S240101");
+  db.prepare("UPDATE runtime_auth_accounts SET can_manage_ai=1 WHERE account_name='teacher2026' AND role='teacher'").run();
 
   function actor(account) {
     if (account.role === "teacher") {
@@ -110,6 +111,7 @@ export function createAuthService({
       role: session.role,
       displayName: session.role === "teacher" ? "演示教师" : "演示学生",
       account: session.accountName,
+      capabilities: { manageAi: session.canManageAi === true },
       actor: session.role === "teacher"
         ? { teacherNo: session.actorRefCode }
         : { studentRef: session.actorRefCode.replace(/^(S\d{2})\d+(\d{2})$/, "$1***$2") },
@@ -177,6 +179,7 @@ export function createAuthService({
       actorRefCode: row.actor_ref_code,
       expiresAt: expiresAt.toISOString(),
       rememberLogin: Boolean(rememberLogin),
+      canManageAi: row.can_manage_ai === 1,
       rawToken: token,
     };
     return { session, csrfToken, cookie: cookie(token, rememberLogin), data: publicData(session, csrfToken) };
@@ -185,7 +188,7 @@ export function createAuthService({
   function resolve(request) {
     const token = cookieValue(header(request, "cookie"));
     if (!token) throw new AuthError("AUTH_REQUIRED", "请先登录。", 401);
-    const row = db.prepare(`SELECT s.*,a.account_name,a.role,a.actor_ref_id,a.actor_ref_code,a.disabled
+    const row = db.prepare(`SELECT s.*,a.account_name,a.role,a.actor_ref_id,a.actor_ref_code,a.disabled,a.can_manage_ai
       FROM runtime_auth_sessions s JOIN runtime_auth_accounts a ON a.id=s.account_id
       WHERE s.session_token_hash=?`).get(hash(token));
     if (!row || row.revoked_at) throw new AuthError("AUTH_SESSION_INVALID", "会话无效，请重新登录。", 401);
@@ -207,6 +210,7 @@ export function createAuthService({
       actorRefCode: row.actor_ref_code,
       expiresAt: row.expires_at,
       rememberLogin: row.remember_login === 1,
+      canManageAi: row.can_manage_ai === 1,
       rawToken: token,
       csrfTokenHash: row.csrf_token_hash,
     };

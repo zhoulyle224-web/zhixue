@@ -52,6 +52,18 @@ Windows 发布包解压后可直接双击 `deploy-and-open.bat` 或 `一键部�
 
 必须先把 ZIP **完整解压**到普通文件夹，再双击启动文件；不要在压缩包预览窗口里直接运行。发布流程会强制把批处理写成 Windows CRLF 换行，避免双击后命令被截断而瞬间退出。若启动失败，窗口会保留明确原因和重试提示。
 
+## 第三轮确认版（0.3.0）
+
+本版本开始落实已确认的“平台能力与 AI 接入”需求。首批范围包括：
+
+- 导入数据经过 Raw → Staging → Quarantine → Curated → Serving 五区，只有确认激活的版本进入服务快照；
+- `demo / test / production` 使用独立运行目录，生产口径默认排除合成数据；
+- 教师演示管理员可在“AI 接口”中一次性提交 API Key，浏览器不持久化且服务端不回显原文；
+- 业务 Skill 统一经 `ModelGateway` 调用服务端预设的 OpenAI-compatible Provider；
+- `/api/v1` AI 接口返回 `requestId`、`modelRunId` 和真实持久化状态；未配置或引用校验失败时明确显示“AI 未生成”。
+
+API Key、运行数据库、审计日志和模型运行数据都位于 `data/runtime/<environment>/`，不会进入 Git 或发布 ZIP。完整确认范围与分批状态见 `docs/第三轮平台能力与AI接入需求说明.md` 和 `docs/第三轮首批实施说明.md`。
+
 也可使用：
 
 ```powershell
@@ -83,15 +95,15 @@ ZHIXUE_TRUST_PROXY=1
 ZHIXUE_SANDBOX_TTL_HOURS=24
 ```
 
-智能问答默认运行“离线知识检索模式”，不需要密钥。若要启用国内可访问的 OpenAI-compatible 模型增强，可在服务端额外配置：
+智能问答未配置模型时运行“课程检索模式”。管理员在教师端“AI 接口”中一次性提交 API Key；服务端验证后写入独立密钥存储。Provider、地址和模型由发布版本预设，部署方如需更换预设可使用：
 
 ```text
 ZHIXUE_MODEL_API_URL=https://你的服务商地址/v1/chat/completions
-ZHIXUE_MODEL_API_KEY=仅保存在服务端的密钥
 ZHIXUE_MODEL_NAME=模型名称
+ZHIXUE_MODEL_ALLOWED_HOSTS=你的服务商域名
 ```
 
-未配置或调用失败时会明确降级，不会伪装成大模型生成；密钥不会进入浏览器、Git 或发布 ZIP。本轮没有更新 CloudBase 版本或控制台配置。
+自定义地址必须是 HTTPS 且域名进入服务端允许列表。未配置或调用失败时会明确显示“AI 未生成”，不会把检索文本伪装成大模型回答；密钥不会进入浏览器持久化、Git、普通日志或发布 ZIP。本轮没有更新 CloudBase 版本或控制台配置。
 
 `/var/data` 必须挂载持久存储。`render.yaml` 仅保留为海外部署备选，不作为国内正式入口；
 相关备选步骤见[公网部署方案](docs/公网部署方案.md)。

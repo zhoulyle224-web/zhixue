@@ -43,6 +43,7 @@ yarn-error.log*
 /work/
 
 # 本地运行数据
+/data/runtime/
 /data/runtime/*.jsonl
 /data/runtime/*.log
 /data/runtime/*.sqlite

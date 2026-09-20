@@ -1,7 +1,7 @@
 {
   "project": "智学双擎",
-  "releaseVersion": "2026.09-final",
-  "createdAt": "2026-09-17T17:27:03.493Z",
+  "releaseVersion": "2026.09-round3-p0-confirmed",
+  "createdAt": "2026-09-20T00:00:00.000Z",
   "dataClassification": "synthetic-demo-only",
   "coreScenarios": [
     "学生课后即时答疑",
@@ -13,6 +13,7 @@
   "m6SummarySha256": "0747aeaacb140fff82d368e88db2d6ea580af9e470f086ca36c24f2fe7699d35",
   "baselineDbSha256": "bba0fc13a8332286be5acef3e190fcb3abf54f92648254c100073e83873922c4",
   "runtimeDbIncluded": false,
+  "modelSecretsIncluded": false,
   "activeSessionsIncluded": false,
   "schoolIdentifyingInformationIncluded": false,
   "artifactStatus": {

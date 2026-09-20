@@ -19,6 +19,8 @@
     <button class="menu" data-view="tasks"><span>✓</span>分层任务发布</button>
     <button class="menu" data-view="inbox"><span>✉</span>学生问题 <span class="count" id="pendingBadge">0</span></button>
     <button class="menu" data-view="reports"><span>↧</span>报告与复盘</button>
+    <div class="side-label">平台设置</div>
+    <button class="menu" data-view="aiInterface" id="aiInterfaceMenu" hidden><span>✦</span>AI 接口</button>
     <div class="side-bottom"><div class="mode-pill">分析基于当前所选课程与班级；公开端只读取脱敏后的学情数据。</div></div>
   </aside>
   <main class="content">
@@ -97,6 +99,22 @@
       <div class="grid three report-grid"><article class="card panel"><span class="report-icon">▦</span><h3>班级学情报告</h3><div id="reportClassSummary" class="report-live-content"><p class="data-empty">正在读取当前班级数据…</p></div></article><article class="card panel"><span class="report-icon">✉</span><h3>答疑记录</h3><div id="reportQaSummary" class="report-live-content"><p class="data-empty">正在读取答疑记录…</p></div></article><article class="card panel"><span class="report-icon">↻</span><h3>教学复盘清单</h3><div id="reportReviewSummary" class="report-live-content"><p class="data-empty">正在读取任务与反馈…</p></div></article></div>
       <article class="card panel timeline-card"><div class="card-head"><h3>教学改进时间线</h3><small>当前批次与任务事件</small></div><div class="timeline" id="teacherTimeline"><p class="data-empty">暂无当前批次数据</p></div></article>
     </section>
+
+    <section class="view" id="aiInterface">
+      <div class="section-title"><div><h2>AI 接口</h2><p>只需录入 API Key；Provider、接口地址、模型和 Skill 绑定由服务端确认版本固定。</p></div><span class="evidence-pill" id="aiConfigBadge">正在检查</span></div>
+      <div class="grid dashboard-grid">
+        <article class="card panel">
+          <div class="card-head"><div><h3>服务端密钥配置</h3><small>密钥一次性提交，不写入浏览器存储、源码、日志或普通数据库字段</small></div></div>
+          <label class="field"><span>API Key</span><input id="aiApiKey" type="password" autocomplete="new-password" maxlength="4096" placeholder="留空表示不修改原密钥"></label>
+          <div class="actions"><button class="btn primary" id="saveAiKey">保存并验证</button></div>
+          <p class="form-status" id="aiConfigMessage">正在读取服务端配置状态…</p>
+        </article>
+        <article class="card panel">
+          <div class="card-head"><div><h3>真实性边界</h3><small>所有 AI 调用均由服务端 Skill 经 ModelGateway 执行</small></div></div>
+          <div class="detail-records"><article><b>未配置或故障</b><p>页面明确显示“AI 未生成”，仅可展示课程检索结果。</p></article><article><b>生成成功</b><p>必须存在 ai_run_id、Skill 版本、模型响应和成功持久化记录。</p></article><article><b>引用校验</b><p>无法定位到当前课程激活资源的引用会在返回学生前被拦截。</p></article></div>
+        </article>
+      </div>
+    </section>
   </main>
 </div>
 <div class="toast"></div>
@@ -116,6 +134,7 @@
 <script src="assets/dialog.js"></script>
 <script src="assets/task-client.js?v=m3"></script>
 <script src="assets/app.js"></script>
+<script src="assets/ai-config.js"></script>
 <script src="assets/export-client.js"></script>
 <script src="assets/concept-motion.js"></script>
 </body></html>

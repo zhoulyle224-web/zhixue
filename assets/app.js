@@ -167,10 +167,10 @@ document.querySelector('#logoutBtn')?.addEventListener('click',async()=>{try{awa
 document.querySelector('#roleSwitchBtn')?.addEventListener('click',async e=>{const next=e.currentTarget.dataset.switchRole;if(PAGE==='teacher'&&next==='student'){openView('students');toast('请选择学生进入教师观察视角；教师身份保持登录');return}try{await window.ZhixueApi.logout()}catch{}toast('直接登录的学生端与教师账号相互独立，切换身份需要重新登录');setTimeout(()=>location.href=`login.html?role=${next}&next=${next}.html`,180)});
 
 const viewCopy={
-  teacherHome:['工作台首页','从班级数据出发，完成研判、教学调整与反馈复盘。'],classes:['课程与班级','查看服务端授权的课程与实际教学班级。'],students:['班级与学生数据','先浏览班级学生概览，再选择具体学生进入独立详情页。'],studentDetail:['学生学习详情','查看该生详细学习数据、智能分析与自动个性化方案。'],analysis:['学情智能研判','查看班级、学生与知识点掌握情况及其依据。'],tasks:['分层任务发布','确认智能体生成的差异化任务并发布到学生端。'],inbox:['学生问题与反馈','处理高频问题，并将结果重新纳入教学研判。'],reports:['报告与复盘','直接查看学情、答疑记录与教学改进结果。'],
+  teacherHome:['工作台首页','从班级数据出发，完成研判、教学调整与反馈复盘。'],classes:['课程与班级','查看服务端授权的课程与实际教学班级。'],students:['班级与学生数据','先浏览班级学生概览，再选择具体学生进入独立详情页。'],studentDetail:['学生学习详情','查看该生详细学习数据、智能分析与自动个性化方案。'],analysis:['学情智能研判','查看班级、学生与知识点掌握情况及其依据。'],tasks:['分层任务发布','确认智能体生成的差异化任务并发布到学生端。'],inbox:['学生问题与反馈','处理高频问题，并将结果重新纳入教学研判。'],reports:['报告与复盘','直接查看学情、答疑记录与教学改进结果。'],aiInterface:['AI 接口','保存并验证服务端模型密钥，不向浏览器回传原始密钥。'],
   studentHome:['学习首页','查看当前课程、个人薄弱点和待完成任务。'],courses:['我的课程','查看服务端授权课程并切换独立的学习空间。'],portrait:['个人学情画像','了解掌握情况、证据来源与下一步建议。'],assistant:['课程智能答疑','基于课程资料和公共基础知识提问，并支持连续追问。'],studentTasks:['今日学习计划','执行系统按本人数据自动生成的个性化方案。'],history:['学习记录与反馈','回看学习过程和掌握度变化。']
 };
-const roleViews={teacher:['teacherHome','classes','students','studentDetail','analysis','tasks','inbox','reports'],student:['studentHome','courses','portrait','assistant','studentTasks','history']};
+const roleViews={teacher:['teacherHome','classes','students','studentDetail','analysis','tasks','inbox','reports','aiInterface'],student:['studentHome','courses','portrait','assistant','studentTasks','history']};
 function readWorkspaceRoute(){
   if(!['teacher','student'].includes(PAGE))return{};
   const raw=location.hash.replace(/^#/,'');const [path,query='']=raw.split('?');const [role,view]=path.split('/');

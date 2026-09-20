@@ -14,6 +14,9 @@ VALUES (5, CURRENT_TIMESTAMP);
 INSERT OR IGNORE INTO runtime_schema_meta(version, applied_at)
 VALUES (6, CURRENT_TIMESTAMP);
 
+INSERT OR IGNORE INTO runtime_schema_meta(version, applied_at)
+VALUES (7, CURRENT_TIMESTAMP);
+
 CREATE TABLE IF NOT EXISTS runtime_auth_accounts (
   id TEXT PRIMARY KEY,
   account_name TEXT NOT NULL UNIQUE,
@@ -24,6 +27,7 @@ CREATE TABLE IF NOT EXISTS runtime_auth_accounts (
   password_salt TEXT NOT NULL,
   password_hash TEXT NOT NULL,
   disabled INTEGER NOT NULL DEFAULT 0 CHECK (disabled IN (0,1)),
+  can_manage_ai INTEGER NOT NULL DEFAULT 0 CHECK (can_manage_ai IN (0,1)),
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
@@ -66,6 +70,79 @@ CREATE TABLE IF NOT EXISTS runtime_import_batches (
   created_at TEXT NOT NULL,
   confirmed_at TEXT,
   confirmed_by_context TEXT
+);
+
+-- Third-round data governance zones. Raw keeps only immutable source metadata and
+-- a digest; parsed content is redacted before it enters staging/quarantine.
+CREATE TABLE IF NOT EXISTS runtime_raw_batches (
+  batch_id TEXT PRIMARY KEY REFERENCES runtime_import_batches(id),
+  environment TEXT NOT NULL CHECK (environment IN ('demo','test','production')),
+  namespace TEXT NOT NULL,
+  source_type TEXT NOT NULL,
+  source_digest TEXT NOT NULL,
+  synthetic INTEGER NOT NULL DEFAULT 0 CHECK (synthetic IN (0,1)),
+  received_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS runtime_staging_records (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  batch_id TEXT NOT NULL REFERENCES runtime_import_batches(id),
+  row_number INTEGER NOT NULL,
+  record_json TEXT NOT NULL,
+  record_fingerprint TEXT NOT NULL,
+  quality_status TEXT NOT NULL CHECK (quality_status IN ('valid','warning','invalid')),
+  UNIQUE(batch_id, row_number)
+);
+
+CREATE TABLE IF NOT EXISTS runtime_quarantine_records (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  batch_id TEXT NOT NULL REFERENCES runtime_import_batches(id),
+  row_number INTEGER NOT NULL,
+  reason_codes_json TEXT NOT NULL,
+  record_json TEXT NOT NULL,
+  quarantined_at TEXT NOT NULL,
+  UNIQUE(batch_id, row_number)
+);
+
+CREATE TABLE IF NOT EXISTS runtime_data_versions (
+  id TEXT PRIMARY KEY,
+  environment TEXT NOT NULL CHECK (environment IN ('demo','test','production')),
+  namespace TEXT NOT NULL,
+  context_key TEXT NOT NULL,
+  batch_id TEXT NOT NULL REFERENCES runtime_import_batches(id),
+  status TEXT NOT NULL CHECK (status IN ('building','active','inactive','failed')),
+  rule_version TEXT NOT NULL,
+  parent_version_id TEXT,
+  activated_at TEXT,
+  activated_by_context TEXT,
+  created_at TEXT NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_runtime_one_active_data_version
+  ON runtime_data_versions(environment, namespace, context_key) WHERE status = 'active';
+
+CREATE TABLE IF NOT EXISTS runtime_curated_records (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  data_version_id TEXT NOT NULL REFERENCES runtime_data_versions(id),
+  environment TEXT NOT NULL CHECK (environment IN ('demo','test','production')),
+  namespace TEXT NOT NULL,
+  context_key TEXT NOT NULL,
+  source_event_id TEXT NOT NULL,
+  record_json TEXT NOT NULL,
+  synthetic INTEGER NOT NULL DEFAULT 0 CHECK (synthetic IN (0,1)),
+  created_at TEXT NOT NULL,
+  UNIQUE(data_version_id, source_event_id)
+);
+
+CREATE TABLE IF NOT EXISTS runtime_serving_snapshots (
+  id TEXT PRIMARY KEY,
+  data_version_id TEXT NOT NULL REFERENCES runtime_data_versions(id),
+  environment TEXT NOT NULL CHECK (environment IN ('demo','test','production')),
+  namespace TEXT NOT NULL,
+  context_key TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('active','stale','failed')),
+  payload_json TEXT NOT NULL,
+  generated_at TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS runtime_import_records (
@@ -143,8 +220,53 @@ CREATE TABLE IF NOT EXISTS runtime_qa_records (
   answered_at TEXT,
   replied_at TEXT,
   updated_at TEXT NOT NULL,
+  ai_run_id TEXT,
+  generation_status TEXT NOT NULL DEFAULT 'degraded_offline',
+  ai_generated INTEGER NOT NULL DEFAULT 0 CHECK (ai_generated IN (0,1)),
   UNIQUE (student_context, client_request_id)
 );
+
+CREATE TABLE IF NOT EXISTS runtime_ai_config (
+  id TEXT PRIMARY KEY CHECK (id = 'default'),
+  secret_ref TEXT NOT NULL,
+  key_last_four TEXT NOT NULL,
+  verification_status TEXT NOT NULL CHECK (verification_status IN ('verified','failed','unconfigured')),
+  verified_at TEXT,
+  updated_by_account_id TEXT,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS runtime_ai_runs (
+  id TEXT PRIMARY KEY,
+  request_id TEXT NOT NULL UNIQUE,
+  purpose TEXT NOT NULL,
+  skill_id TEXT NOT NULL,
+  skill_version TEXT NOT NULL,
+  actor_id TEXT NOT NULL,
+  tenant_id TEXT NOT NULL,
+  course_id INTEGER,
+  session_id TEXT,
+  provider_id TEXT,
+  model TEXT,
+  model_revision TEXT,
+  status TEXT NOT NULL CHECK (status IN (
+    'received','redacted','retrieving','generating','validating',
+    'completed_persisted','degraded_offline','failed_retryable','failed_terminal'
+  )),
+  input_digest TEXT NOT NULL,
+  evidence_json TEXT NOT NULL DEFAULT '[]',
+  token_usage_json TEXT NOT NULL DEFAULT '{}',
+  safety_flags_json TEXT NOT NULL DEFAULT '[]',
+  provider_request_id TEXT,
+  error_code TEXT,
+  latency_ms INTEGER,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  persisted_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_runtime_ai_runs_actor
+  ON runtime_ai_runs(actor_id, created_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_runtime_qa_student
   ON runtime_qa_records(student_context, offering_id, created_at DESC);

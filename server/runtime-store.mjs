@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -107,10 +107,38 @@ function mapQa(row) {
     modelProvider: row.model_provider || "offline",
     confidence: row.confidence || "中",
     personalizationBasis: JSON.parse(row.personalization_basis_json || "[]"),
+    aiRunId: row.ai_run_id || null,
+    generationStatus: row.generation_status || "degraded_offline",
+    aiGenerated: Number(row.ai_generated || 0) === 1,
   };
 }
 
-export function createRuntimeStore(dbPath = DEFAULT_RUNTIME_DB) {
+function stableDigest(value) {
+  return createHash("sha256").update(JSON.stringify(value)).digest("hex");
+}
+
+function mapAiRun(row) {
+  if (!row) return null;
+  return {
+    aiRunId: row.id, requestId: row.request_id, purpose: row.purpose,
+    skillId: row.skill_id, skillVersion: row.skill_version,
+    actorId: row.actor_id, tenantId: row.tenant_id, courseId: row.course_id,
+    sessionId: row.session_id, providerId: row.provider_id, model: row.model,
+    modelRevision: row.model_revision, status: row.status,
+    evidence: JSON.parse(row.evidence_json || "[]"),
+    tokenUsage: JSON.parse(row.token_usage_json || "{}"),
+    safetyFlags: JSON.parse(row.safety_flags_json || "[]"),
+    providerRequestId: row.provider_request_id, errorCode: row.error_code,
+    latencyMs: row.latency_ms, createdAt: row.created_at,
+    updatedAt: row.updated_at, persistedAt: row.persisted_at,
+  };
+}
+
+export function createRuntimeStore(dbPath = DEFAULT_RUNTIME_DB, {
+  environment = process.env.ZHIXUE_ENVIRONMENT || "demo",
+  namespace = "learning-events",
+} = {}) {
+  if (!['demo', 'test', 'production'].includes(environment)) throw new Error("RUNTIME_ENVIRONMENT_INVALID");
   if (dbPath !== ":memory:") mkdirSync(dirname(dbPath), { recursive: true });
   const db = new DatabaseSync(dbPath);
   db.exec(readFileSync(SCHEMA_PATH, "utf8"));
@@ -129,6 +157,13 @@ export function createRuntimeStore(dbPath = DEFAULT_RUNTIME_DB) {
     ensureQaColumn("model_provider", "model_provider TEXT");
     ensureQaColumn("confidence", "confidence TEXT");
     ensureQaColumn("personalization_basis_json", "personalization_basis_json TEXT NOT NULL DEFAULT '[]'");
+    ensureQaColumn("ai_run_id", "ai_run_id TEXT");
+    ensureQaColumn("generation_status", "generation_status TEXT NOT NULL DEFAULT 'degraded_offline'");
+    ensureQaColumn("ai_generated", "ai_generated INTEGER NOT NULL DEFAULT 0 CHECK (ai_generated IN (0,1))");
+    const accountColumns = db.prepare("PRAGMA table_info(runtime_auth_accounts)").all();
+    if (!accountColumns.some((column) => column.name === "can_manage_ai")) {
+      db.exec("ALTER TABLE runtime_auth_accounts ADD COLUMN can_manage_ai INTEGER NOT NULL DEFAULT 0 CHECK (can_manage_ai IN (0,1))");
+    }
     // 'analyzed' was a presentation state in M2; confirmation remains the batch fact.
     db.prepare("UPDATE runtime_import_batches SET status = 'confirmed' WHERE status = 'analyzed' AND confirmed_at IS NOT NULL").run();
     db.exec("COMMIT");
@@ -168,12 +203,36 @@ export function createRuntimeStore(dbPath = DEFAULT_RUNTIME_DB) {
         q.invalidRows, q.duplicateRows, q.warningRows, q.blockingIssueCount,
         q.warningIssueCount, batch.createdAt,
       );
+      db.prepare(`INSERT INTO runtime_raw_batches
+        (batch_id,environment,namespace,source_type,source_digest,synthetic,received_at)
+        VALUES(?,?,?,?,?,?,?)`).run(
+        batch.batchId, environment, namespace, `file:${batch.file.format}`,
+        batch.file.sha256, environment === "demo" ? 1 : 0, batch.createdAt,
+      );
+      const issueCodes = new Map();
+      for (const issue of issues) {
+        const codes = issueCodes.get(issue.rowNumber) || [];
+        codes.push(issue.code);
+        issueCodes.set(issue.rowNumber, codes);
+      }
       for (const record of records) {
         insertRecord.run(
           batch.batchId, record.rowNumber, record.anonymousId,
           record.knowledgePoint, record.score, record.completedAt,
           record.isValid ? 1 : 0, record.excludedReason,
         );
+        const safeRecord = {
+          anonymousId: record.anonymousId, knowledgePoint: record.knowledgePoint,
+          score: record.score, completedAt: record.completedAt,
+        };
+        const codes = issueCodes.get(record.rowNumber) || [];
+        const qualityStatus = record.isValid ? (codes.length ? "warning" : "valid") : "invalid";
+        db.prepare(`INSERT INTO runtime_staging_records
+          (batch_id,row_number,record_json,record_fingerprint,quality_status)
+          VALUES(?,?,?,?,?)`).run(batch.batchId, record.rowNumber, JSON.stringify(safeRecord), stableDigest(safeRecord), qualityStatus);
+        if (!record.isValid) db.prepare(`INSERT INTO runtime_quarantine_records
+          (batch_id,row_number,reason_codes_json,record_json,quarantined_at)
+          VALUES(?,?,?,?,?)`).run(batch.batchId, record.rowNumber, JSON.stringify(codes), JSON.stringify(safeRecord), batch.createdAt);
       }
       for (const issue of issues) {
         insertIssue.run(
@@ -222,12 +281,54 @@ export function createRuntimeStore(dbPath = DEFAULT_RUNTIME_DB) {
 
   function confirmBatch(batchId, context) {
     const now = new Date().toISOString();
-    db.prepare(`
-      UPDATE runtime_import_batches
-      SET status = 'confirmed', confirmed_at = ?, confirmed_by_context = ?
-      WHERE id = ? AND context_key = ? AND status = 'validated' AND valid_rows > 0
-    `).run(now, context, batchId, context);
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      const update = db.prepare(`UPDATE runtime_import_batches
+        SET status = 'confirmed', confirmed_at = ?, confirmed_by_context = ?
+        WHERE id = ? AND context_key = ? AND status = 'validated' AND valid_rows > 0`)
+        .run(now, context, batchId, context);
+      if (update.changes) {
+        const previous = db.prepare(`SELECT id FROM runtime_data_versions
+          WHERE environment=? AND namespace=? AND context_key=? AND status='active'`).get(environment, namespace, context);
+        const versionId = `dv_${randomUUID()}`;
+        db.prepare(`INSERT INTO runtime_data_versions
+          (id,environment,namespace,context_key,batch_id,status,rule_version,parent_version_id,created_at)
+          VALUES(?,?,?,?,?,'building','round3-v1',?,?)`).run(versionId, environment, namespace, context, batchId, previous?.id || null, now);
+        const rows = db.prepare(`SELECT row_number,anonymous_id,knowledge_point,score,completed_at
+          FROM runtime_import_records WHERE batch_id=? AND is_valid=1 ORDER BY row_number`).all(batchId);
+        const insertCurated = db.prepare(`INSERT OR IGNORE INTO runtime_curated_records
+          (data_version_id,environment,namespace,context_key,source_event_id,record_json,synthetic,created_at)
+          VALUES(?,?,?,?,?,?,?,?)`);
+        for (const row of rows) {
+          const record = { anonymousId: row.anonymous_id, knowledgePoint: row.knowledge_point, score: row.score, completedAt: row.completed_at };
+          insertCurated.run(versionId, environment, namespace, context, stableDigest(record), JSON.stringify(record), environment === 'demo' ? 1 : 0, now);
+        }
+        if (previous) db.prepare("UPDATE runtime_data_versions SET status='inactive' WHERE id=?").run(previous.id);
+        db.prepare(`UPDATE runtime_data_versions SET status='active',activated_at=?,activated_by_context=? WHERE id=?`).run(now, context, versionId);
+        db.prepare(`UPDATE runtime_serving_snapshots SET status='stale'
+          WHERE environment=? AND namespace=? AND context_key=? AND status='active'`).run(environment, namespace, context);
+        const effectiveCount = db.prepare(`SELECT COUNT(*) count FROM runtime_curated_records
+          WHERE data_version_id=? AND synthetic=?`).get(versionId, environment === 'production' ? 0 : 1).count;
+        db.prepare(`INSERT INTO runtime_serving_snapshots
+          (id,data_version_id,environment,namespace,context_key,status,payload_json,generated_at)
+          VALUES(?,?,?,?,?,'active',?,?)`).run(`sv_${randomUUID()}`, versionId, environment, namespace, context, JSON.stringify({ effectiveRecordCount: effectiveCount, sourceVersion: versionId }), now);
+      }
+      db.exec("COMMIT");
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
     return getBatch(batchId);
+  }
+
+  function getGovernanceStatus(context) {
+    const active = db.prepare(`SELECT * FROM runtime_data_versions
+      WHERE environment=? AND namespace=? AND context_key=? AND status='active'`).get(environment, namespace, context);
+    const counts = active ? db.prepare(`SELECT
+      (SELECT COUNT(*) FROM runtime_staging_records WHERE batch_id=?) staging,
+      (SELECT COUNT(*) FROM runtime_quarantine_records WHERE batch_id=?) quarantine,
+      (SELECT COUNT(*) FROM runtime_curated_records WHERE data_version_id=?) curated`).get(active.batch_id, active.batch_id, active.id) : { staging: 0, quarantine: 0, curated: 0 };
+    return { environment, namespace, activeDataVersion: active?.id || null, sourceBatchId: active?.batch_id || null, counts };
   }
 
   function writeAnalysis({ batchId, context, skillId, skillVersion, inputDigest, result, evidence }) {
@@ -305,8 +406,9 @@ export function createRuntimeStore(dbPath = DEFAULT_RUNTIME_DB) {
        assistant_answer, evidence_json, related_knowledge_json, guide_questions_json,
        knowledge_version, skill_id, skill_version, handoff_status, teacher_context,
        created_at, answered_at, updated_at, session_id, answer_state,
-       answer_source_type, model_provider, confidence, personalization_basis_json)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+       answer_source_type, model_provider, confidence, personalization_basis_json,
+       ai_run_id, generation_status, ai_generated)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
       id, record.clientRequestId, record.studentContext, record.studentNo,
       record.classId, record.offeringId, record.courseId, record.courseCode,
       record.courseName, record.question, record.status, record.assistantAnswer,
@@ -317,6 +419,8 @@ export function createRuntimeStore(dbPath = DEFAULT_RUNTIME_DB) {
       record.sessionId || null, record.answerState || null, record.answerSourceType || null,
       record.modelProvider || "offline", record.confidence || null,
       JSON.stringify(record.personalizationBasis || []),
+      record.aiRunId || null, record.generationStatus || "degraded_offline",
+      record.aiGenerated ? 1 : 0,
     );
     return getQa(id);
   }
@@ -389,6 +493,63 @@ export function createRuntimeStore(dbPath = DEFAULT_RUNTIME_DB) {
     return db.prepare("SELECT * FROM runtime_export_audits WHERE export_id=?").get(exportId) || null;
   }
 
+  function getAiConfig() {
+    const row = db.prepare("SELECT * FROM runtime_ai_config WHERE id='default'").get();
+    return row ? {
+      secretRef: row.secret_ref, keyLastFour: row.key_last_four,
+      verificationStatus: row.verification_status, verifiedAt: row.verified_at,
+      updatedByAccountId: row.updated_by_account_id, updatedAt: row.updated_at,
+    } : null;
+  }
+
+  function saveAiConfig({ secretRef, keyLastFour, accountId }) {
+    const now = new Date().toISOString();
+    db.prepare(`INSERT INTO runtime_ai_config
+      (id,secret_ref,key_last_four,verification_status,verified_at,updated_by_account_id,updated_at)
+      VALUES('default',?,?,'verified',?,?,?)
+      ON CONFLICT(id) DO UPDATE SET secret_ref=excluded.secret_ref,
+        key_last_four=excluded.key_last_four,verification_status='verified',
+        verified_at=excluded.verified_at,updated_by_account_id=excluded.updated_by_account_id,
+        updated_at=excluded.updated_at`).run(secretRef, keyLastFour, now, accountId, now);
+    return getAiConfig();
+  }
+
+  function createAiRun(row) {
+    const now = new Date().toISOString();
+    db.prepare(`INSERT INTO runtime_ai_runs
+      (id,request_id,purpose,skill_id,skill_version,actor_id,tenant_id,course_id,
+       session_id,status,input_digest,evidence_json,created_at,updated_at)
+      VALUES(?,?,?,?,?,?,?,?,?,'received',?,?,?,?)`).run(
+      row.aiRunId, row.requestId, row.purpose, row.skillId, row.skillVersion,
+      row.actorId, row.tenantId, row.courseId, row.sessionId,
+      row.inputDigest, JSON.stringify(row.evidence || []), now, now,
+    );
+    return getAiRun(row.aiRunId);
+  }
+
+  function updateAiRun(aiRunId, patch) {
+    const current = db.prepare("SELECT * FROM runtime_ai_runs WHERE id=?").get(aiRunId);
+    if (!current) return null;
+    const now = new Date().toISOString();
+    db.prepare(`UPDATE runtime_ai_runs SET status=?,provider_id=?,model=?,model_revision=?,
+      token_usage_json=?,safety_flags_json=?,provider_request_id=?,error_code=?,latency_ms=?,
+      updated_at=?,persisted_at=? WHERE id=?`).run(
+      patch.status || current.status,
+      patch.providerId ?? current.provider_id, patch.model ?? current.model,
+      patch.modelRevision ?? current.model_revision,
+      patch.tokenUsage ? JSON.stringify(patch.tokenUsage) : current.token_usage_json,
+      patch.safetyFlags ? JSON.stringify(patch.safetyFlags) : current.safety_flags_json,
+      patch.providerRequestId ?? current.provider_request_id,
+      patch.errorCode ?? current.error_code, patch.latencyMs ?? current.latency_ms,
+      now, patch.persisted ? now : current.persisted_at, aiRunId,
+    );
+    return getAiRun(aiRunId);
+  }
+
+  function getAiRun(aiRunId) {
+    return mapAiRun(db.prepare("SELECT * FROM runtime_ai_runs WHERE id=?").get(aiRunId));
+  }
+
   return {
     writeBatch,
     getBatch,
@@ -396,6 +557,7 @@ export function createRuntimeStore(dbPath = DEFAULT_RUNTIME_DB) {
     getIssues,
     getValidRecords,
     confirmBatch,
+    getGovernanceStatus,
     writeAnalysis,
     getLatestAnalysis,
     getLatestCompletedAnalysis,
@@ -412,6 +574,11 @@ export function createRuntimeStore(dbPath = DEFAULT_RUNTIME_DB) {
     getQaSessionHistory,
     writeExportAudit,
     getExportAudit,
+    getAiConfig,
+    saveAiConfig,
+    createAiRun,
+    updateAiRun,
+    getAiRun,
     // Internal server services share this connection so multi-table M3 writes
     // can be committed in one SQLite transaction. It is never exposed by HTTP.
     taskDatabase: db,
