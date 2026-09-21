@@ -88,10 +88,11 @@ $url = "http://127.0.0.1:$port/?instance=$instanceId"
 
 if (-not $selection.Reuse) {
   Write-Step "正在启动本地服务，端口 $port..."
+  $serverEntry = Join-Path $root "server\local-api.mjs"
   $process = Start-Process `
     -FilePath $nodeExecutable `
-    -ArgumentList @("server/local-api.mjs", "--host", "127.0.0.1", "--port", "$port", "--instance", $instanceId) `
-    -WorkingDirectory $root `
+    -ArgumentList @($serverEntry, "--host", "127.0.0.1", "--port", "$port", "--instance", $instanceId) `
+    -WorkingDirectory ([System.IO.Path]::GetTempPath()) `
     -WindowStyle Hidden `
     -PassThru
 
@@ -124,6 +125,7 @@ if (-not $selection.Reuse) {
 }
 
 Write-Step "部署完成，正在打开 $url"
+Write-Step "删除本版本前，请先双击 stop-service.bat 或 停止智学双擎服务.bat。"
 if (-not $NoOpen) {
   Start-Process $url
 }

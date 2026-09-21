@@ -57,7 +57,7 @@ test('四个页面加载统一可读性样式',async()=>{
 });
 
 test('Windows 发布包内置 Node 并被一键脚本优先使用',async()=>{
-  const [prepare,deploy,start,batch,attributes]=await Promise.all([read('scripts/prepare-submission.mjs'),read('scripts/deploy-and-open.ps1'),read('scripts/start-zhixue.ps1'),read('deploy-and-open.bat'),read('.gitattributes')]);
+  const [prepare,deploy,start,batch,attributes,stop,stopBatch]=await Promise.all([read('scripts/prepare-submission.mjs'),read('scripts/deploy-and-open.ps1'),read('scripts/start-zhixue.ps1'),read('deploy-and-open.bat'),read('.gitattributes'),read('scripts/stop-zhixue.ps1'),read('stop-service.bat')]);
   assert.match(prepare,/copyFile\(process\.execPath, join\(runtimeDirectory, "node\.exe"\)\)/);
   assert.match(prepare,/bundledNodeRuntime/);
   assert.match(prepare,/content\.replace\(\/\\r\?\\n\/g, "\\r\\n"\)/);
@@ -73,4 +73,9 @@ test('Windows 发布包内置 Node 并被一键脚本优先使用',async()=>{
   assert.match(deploy,/--instance/);
   assert.match(deploy,/instance=\$instanceId/);
   assert.match(deploy,/Test-ZhixueHealth \$port \$instanceId/);
+  assert.match(deploy,/GetTempPath/);
+  assert.match(prepare,/stop-service\.bat/);
+  assert.match(stop,/Stop-Process -Id \$pidValue -Force/);
+  assert.match(stop,/instanceId -ne \$instanceId/);
+  assert.match(stopBatch,/scripts\\stop-zhixue\.ps1/);
 });

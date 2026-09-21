@@ -8,7 +8,8 @@ const RELEASE_ROOT = join(ROOT, "release");
 const STAGING = join(RELEASE_ROOT, "智学双擎_参赛提交版");
 const ROOT_FILES = [
   ".dockerignore", ".gitattributes", ".gitignore", ".nojekyll", "404.html", "Dockerfile", "compose.yaml",
-  "deploy-and-open.bat", "一键部署并打开.bat", "index.html", "login.html", "student.html",
+  "deploy-and-open.bat", "一键部署并打开.bat", "stop-service.bat", "停止智学双擎服务.bat",
+  "index.html", "login.html", "student.html",
   "teacher.html", "package.json", "package-lock.json", "README.md",
 ];
 const DIRECTORIES = [
@@ -63,7 +64,7 @@ async function main() {
     if (!(await exists(source))) throw new Error(`缺少源码文件：${name}`);
     await copyPath(source, join(resolvedStaging, name));
   }
-  for (const name of ["deploy-and-open.bat", "一键部署并打开.bat"]) {
+  for (const name of ["deploy-and-open.bat", "一键部署并打开.bat", "stop-service.bat", "停止智学双擎服务.bat"]) {
     const target = join(resolvedStaging, name);
     const content = await readFile(target, "utf8");
     await writeFile(target, content.replace(/\r?\n/g, "\r\n"), "utf8");
