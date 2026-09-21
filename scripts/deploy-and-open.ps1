@@ -12,18 +12,41 @@ function Write-Step([string]$Message) {
   Write-Host "[智学双擎] $Message" -ForegroundColor Cyan
 }
 
-function Test-ZhixueHealth([int]$Port) {
+function Get-ZhixueInstanceId {
+  $identityFiles = @(
+    (Join-Path $root "package.json"),
+    (Join-Path $root "server\local-api.mjs"),
+    (Join-Path $root "teacher.html")
+  )
+  $parts = @($root.ToLowerInvariant())
+  foreach ($path in $identityFiles) {
+    if (-not (Test-Path -LiteralPath $path)) {
+      throw "启动文件不完整：缺少 $path"
+    }
+    $parts += (Get-FileHash -Algorithm SHA256 -LiteralPath $path).Hash
+  }
+  $sha256 = [System.Security.Cryptography.SHA256]::Create()
+  try {
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes(($parts -join "|"))
+    $digest = [System.BitConverter]::ToString($sha256.ComputeHash($bytes)).Replace("-", "").ToLowerInvariant()
+    return "zhixue-$($digest.Substring(0, 24))"
+  } finally {
+    $sha256.Dispose()
+  }
+}
+
+function Test-ZhixueHealth([int]$Port, [string]$ExpectedInstanceId) {
   try {
     $response = Invoke-RestMethod "http://127.0.0.1:$Port/api/health" -TimeoutSec 1
-    return [bool]$response.success
+    return [bool]$response.success -and $response.instanceId -eq $ExpectedInstanceId
   } catch {
     return $false
   }
 }
 
-function Find-AvailablePort {
+function Find-AvailablePort([string]$ExpectedInstanceId) {
   for ($port = $StartPort; $port -le $EndPort; $port++) {
-    if (Test-ZhixueHealth $port) {
+    if (Test-ZhixueHealth $port $ExpectedInstanceId) {
       return @{ Port = $port; Reuse = $true }
     }
 
@@ -58,15 +81,16 @@ if (Test-Path -LiteralPath $bundledNode) {
 $runtimeDirectory = Join-Path $root "data\runtime"
 New-Item -ItemType Directory -Force -Path $runtimeDirectory | Out-Null
 
-$selection = Find-AvailablePort
+$instanceId = Get-ZhixueInstanceId
+$selection = Find-AvailablePort $instanceId
 $port = $selection.Port
-$url = "http://127.0.0.1:$port/"
+$url = "http://127.0.0.1:$port/?instance=$instanceId"
 
 if (-not $selection.Reuse) {
   Write-Step "正在启动本地服务，端口 $port..."
   $process = Start-Process `
     -FilePath $nodeExecutable `
-    -ArgumentList @("server/local-api.mjs", "--host", "127.0.0.1", "--port", "$port") `
+    -ArgumentList @("server/local-api.mjs", "--host", "127.0.0.1", "--port", "$port", "--instance", $instanceId) `
     -WorkingDirectory $root `
     -WindowStyle Hidden `
     -PassThru
@@ -77,7 +101,7 @@ if (-not $selection.Reuse) {
     if ($process.HasExited) {
       throw "本地服务启动失败，请检查 Node.js 版本和 data/zhixue_demo.sqlite。"
     }
-    if (Test-ZhixueHealth $port) {
+    if (Test-ZhixueHealth $port $instanceId) {
       $ready = $true
       break
     }
@@ -92,10 +116,11 @@ if (-not $selection.Reuse) {
     pid = $process.Id
     port = $port
     url = $url
+    instanceId = $instanceId
     startedAt = (Get-Date).ToString("o")
   } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $runtimeDirectory "server.json") -Encoding UTF8
 } else {
-  Write-Step "检测到本地服务已在运行，直接打开现有实例。"
+  Write-Step "检测到当前版本已在运行，直接打开同一实例。"
 }
 
 Write-Step "部署完成，正在打开 $url"

@@ -69,4 +69,8 @@ test('Windows 发布包内置 Node 并被一键脚本优先使用',async()=>{
     assert.match(script,/Test-Path -LiteralPath \$bundledNode/);
   }
   assert.match(deploy,/-FilePath \$nodeExecutable/);
+  assert.match(deploy,/Get-ZhixueInstanceId/);
+  assert.match(deploy,/--instance/);
+  assert.match(deploy,/instance=\$instanceId/);
+  assert.match(deploy,/Test-ZhixueHealth \$port \$instanceId/);
 });

@@ -34,6 +34,19 @@ test("本地健康检查不依赖外网", async () => {
   });
 });
 
+test("健康检查回传一键部署实例指纹", async () => {
+  const server = createZhixueServer({ runtimeDbPath: ":memory:", instanceId: "zhixue-test-instance" });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const payload = await globalThis.fetch(`${baseUrl}/api/health`).then((response) => response.json());
+    assert.equal(payload.success, true);
+    assert.equal(payload.instanceId, "zhixue-test-instance");
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
 test("课程目录与班级看板可供教师端读取", async () => {
   await withServer(async (baseUrl) => {
     const catalog = await fetch(`${baseUrl}/api/catalog`).then((response) => response.json());

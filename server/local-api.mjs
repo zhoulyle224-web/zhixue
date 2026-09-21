@@ -166,7 +166,7 @@ function createLoginLimiter() {
   return { check, success };
 }
 
-async function handleApi(request, url, runtimeStore, taskService, authService, exportService, learningService, aiService, baseDb, prefetchedLoginBody, sandboxed = false) {
+async function handleApi(request, url, runtimeStore, taskService, authService, exportService, learningService, aiService, baseDb, prefetchedLoginBody, sandboxed = false, instanceId = "") {
   let resolvedSession;
   const session = () => {
     resolvedSession ||= authService.resolve(request);
@@ -340,6 +340,7 @@ async function handleApi(request, url, runtimeStore, taskService, authService, e
       syntheticData: true,
       integrity: Object.values(integrity)[0],
       sourceVersion: model.meta.sourceVersion,
+      ...(instanceId ? { instanceId } : {}),
       services: {
         auth: "ready",
         skills: "ready",
@@ -902,6 +903,7 @@ export function createZhixueServer({
   exportOptions,
   modelGateway: injectedModelGateway,
   secretStore: injectedSecretStore,
+  instanceId = process.env.ZHIXUE_INSTANCE_ID || "",
 } = {}) {
   const baseDb = new DatabaseSync(baselineDbPath, { readOnly: true });
   const loginLimiter = createLoginLimiter();
@@ -956,6 +958,7 @@ export function createZhixueServer({
           baseDb,
           loginBody,
           Boolean(sandboxManager),
+          instanceId,
         );
         if (loginLimitKey && result.status < 400) loginLimiter.success(loginLimitKey);
       } else {
@@ -993,7 +996,8 @@ function getCliOption(name, fallback) {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const port = Number(process.env.PORT || getCliOption("port", 8080));
   const host = process.env.HOST || getCliOption("host", "127.0.0.1");
-  const server = createZhixueServer();
+  const instanceId = process.env.ZHIXUE_INSTANCE_ID || getCliOption("instance", "");
+  const server = createZhixueServer({ instanceId });
   server.listen(port, host, () => {
     console.log(`智学双擎服务已启动：http://${host}:${port}`);
     console.log(process.env.NODE_ENV === "production"
