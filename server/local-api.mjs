@@ -21,7 +21,7 @@ import { createSandboxManager } from "./sandbox-manager.mjs";
 import { createStaticHandler } from "./static-service.mjs";
 import { createLearningService, LearningError } from "./learning-service.mjs";
 import { createAiService, AiServiceError } from "./ai-service.mjs";
-import { createModelGatewayRegistry } from "./model-gateway.mjs";
+import { createModelGateway } from "./model-gateway.mjs";
 import { createSecretStore } from "./secret-store.mjs";
 import {
   authorizeStudentOffering,
@@ -199,9 +199,10 @@ async function handleApi(request, url, runtimeStore, taskService, authService, e
     try {
       const current = stateSession();
       requireAiAdmin(current);
+      if (sandboxed) throw new AiServiceError("AI_CONFIG_DISABLED_IN_PUBLIC_SANDBOX", "公开演示空间不允许保存外部模型密钥。", 403);
       const body = await readJsonBody(request, 8192);
-      const data = await aiService.configureKey(body.apiKey, current.accountId, { providerId: body.providerId, model: body.model });
-      await recordAudit({ actorRole: current.role, accountId: current.accountId, action: "ai_key_verified", objectType: "ai_config", objectRef: String(body.providerId || "default"), result: "success" });
+      const data = await aiService.configureKey(body.apiKey, current.accountId);
+      await recordAudit({ actorRole: current.role, accountId: current.accountId, action: "ai_key_verified", objectType: "ai_config", objectRef: "default", result: "success" });
       return v1Success(data, { requestId });
     } catch (error) { return v1Error(error, requestId); }
   }
@@ -906,7 +907,7 @@ export function createZhixueServer({
   const loginLimiter = createLoginLimiter();
   const fixedRuntime = Boolean(injectedRuntimeStore || runtimeDbPath);
   const runtimeStore = fixedRuntime ? (injectedRuntimeStore || createRuntimeStore(runtimeDbPath)) : null;
-  const modelGateway = injectedModelGateway || createModelGatewayRegistry();
+  const modelGateway = injectedModelGateway || createModelGateway();
   const secretStore = injectedSecretStore || createSecretStore({ root: runtimeDbPath ? null : resolve(RUNTIME_ROOT, "secrets") });
   const fixedServices = runtimeStore ? {
     runtimeStore,
@@ -914,7 +915,7 @@ export function createZhixueServer({
     authService: createAuthService({ baseDb, runtimeStore, secureCookie, trustProxy }),
     exportService: createExportService({ baseDb, runtimeStore, secondaryAudit: recordAudit, options: exportOptions }),
     learningService: createLearningService({ baseDb, runtimeStore, skills, audit: recordAudit }),
-    aiService: createAiService({ runtimeStore, modelGateway, secretStore, persistence: "server" }),
+    aiService: createAiService({ runtimeStore, modelGateway, secretStore }),
   } : null;
   const sandboxManager = fixedRuntime ? null : createSandboxManager({
     root: sandboxRoot,
@@ -941,12 +942,7 @@ export function createZhixueServer({
             sandboxId = normalizeSandboxId(loginBody.sandboxId) || sandboxManager.createId();
           }
           services = sandboxManager.get(sandboxId || PUBLIC_SANDBOX_ID);
-          services.aiService ||= createAiService({
-            runtimeStore: services.runtimeStore,
-            modelGateway,
-            secretStore: createSecretStore(),
-            persistence: "sandbox",
-          });
+          services.aiService ||= createAiService({ runtimeStore: services.runtimeStore, modelGateway, secretStore });
         }
         result = await handleApi(
           request,
