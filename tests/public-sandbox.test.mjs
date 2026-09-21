@@ -8,11 +8,17 @@ import { createZhixueServer } from "../server/local-api.mjs";
 const SANDBOX_A = `sbx_${"a".repeat(32)}`;
 const SANDBOX_B = `sbx_${"b".repeat(32)}`;
 
-async function listen(root) {
-  const server = createZhixueServer({ sandboxRoot: root, trustProxy: true, secureCookie: false });
+async function listen(root, modelGateway) {
+  const server = createZhixueServer({ sandboxRoot: root, trustProxy: true, secureCookie: false, modelGateway });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   return { server, base: `http://127.0.0.1:${server.address().port}` };
 }
+
+const sandboxGateway = {
+  providerId: "sandbox-test", model: "sandbox-model",
+  async healthCheck() { return { providerId: this.providerId, model: this.model, outputText: "OK" }; },
+  async chat() { throw new Error("not used"); },
+};
 
 async function close(server) {
   await new Promise((resolve) => server.close(resolve));
@@ -82,6 +88,35 @@ test("公网演示沙箱按访客隔离，并在服务重启后保留", async ()
     assert.equal(history.response.status, 200);
     assert.equal(history.payload.data.length, 1);
     assert.equal(history.payload.data[0].question, "栈和队列的区别是什么？");
+  } finally {
+    if (running?.server?.listening) await close(running.server);
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("公网演示 AI Key 仅在当前沙箱内临时保存", async () => {
+  const root = await mkdtemp(join(tmpdir(), "zhixue-ai-sandboxes-"));
+  let running;
+  try {
+    running = await listen(root, sandboxGateway);
+    const teacherA = await login(running.base, "teacher", SANDBOX_A);
+    const teacherB = await login(running.base, "teacher", SANDBOX_B);
+    const saved = await api(running.base, teacherA, "/api/v1/admin/ai/key", {
+      method: "PUT", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ apiKey: "sk-sandbox-a-only-1234" }),
+    });
+    assert.equal(saved.response.status, 200, JSON.stringify(saved.payload));
+    assert.equal(saved.payload.data.configured, true);
+    assert.equal(saved.payload.data.persistence, "sandbox");
+
+    const statusB = await api(running.base, teacherB, "/api/v1/admin/ai/status");
+    assert.equal(statusB.payload.data.configured, false);
+    assert.doesNotMatch(JSON.stringify(statusB.payload), /sandbox-a-only/);
+
+    await close(running.server);
+    running = await listen(root, sandboxGateway);
+    const afterRestart = await api(running.base, teacherA, "/api/v1/admin/ai/status");
+    assert.equal(afterRestart.payload.data.configured, false, "服务重启后沙箱密钥应失效");
   } finally {
     if (running?.server?.listening) await close(running.server);
     await rm(root, { recursive: true, force: true });

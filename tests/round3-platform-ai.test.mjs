@@ -5,6 +5,7 @@ import test from "node:test";
 import { createZhixueServer } from "../server/local-api.mjs";
 import { createRuntimeStore } from "../server/runtime-store.mjs";
 import { createSecretStore } from "../server/secret-store.mjs";
+import { createModelGatewayRegistry } from "../server/model-gateway.mjs";
 import { createAuthenticatedFetch } from "./auth-test-helper.mjs";
 
 const studentContext = "student:S240101";
@@ -65,11 +66,48 @@ test("R3-AI-01 API Key 仅管理员可配置且数据库不保存明文", async 
     assert.equal(saved.body.data.keyMask, "••••1234");
     assert.doesNotMatch(JSON.stringify(saved.body), /sk-round3-secret/);
 
-    const row = runtimeStore.taskDatabase.prepare("SELECT * FROM runtime_ai_config WHERE id='default'").get();
-    assert.equal(row.secret_ref, "local://ai/provider/default");
+    const row = runtimeStore.taskDatabase.prepare("SELECT * FROM runtime_ai_provider_configs WHERE provider_id='test-openai-compatible'").get();
+    assert.equal(row.secret_ref, "local://ai/provider/test-openai-compatible");
     assert.equal(row.key_last_four, "1234");
     assert.doesNotMatch(JSON.stringify(row), /sk-round3-secret/);
   });
+});
+
+test("R3-AI-01B 支持多服务商独立 Key 与自定义模型", async () => {
+  const registry = createModelGatewayRegistry({
+    fetchImpl: async (_url, options) => {
+      const request = JSON.parse(options.body);
+      return new Response(JSON.stringify({
+        id: "provider_req_multi", model: request.model,
+        choices: [{ message: { content: "OK" }, finish_reason: "stop" }], usage: {},
+      }), { status: 200, headers: { "content-type": "application/json" } });
+    },
+  });
+  await withServer(async ({ base, fetch, runtimeStore }) => {
+    const before = await jsonRequest(fetch, `${base}/api/v1/admin/ai/status`);
+    assert.deepEqual(before.body.data.providers.map((item) => item.id), ["qwen", "deepseek", "siliconflow", "openai"]);
+
+    for (const config of [
+      { providerId: "deepseek", model: "deepseek-reasoner", apiKey: "sk-deepseek-example-1234" },
+      { providerId: "qwen", model: "qwen-custom-edu", apiKey: "sk-qwen-example-5678" },
+    ]) {
+      const saved = await jsonRequest(fetch, `${base}/api/v1/admin/ai/key`, {
+        method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(config),
+      });
+      assert.equal(saved.status, 200);
+      assert.equal(saved.body.data.activeProviderId, config.providerId);
+    }
+
+    const rows = runtimeStore.taskDatabase.prepare("SELECT provider_id,model,key_last_four FROM runtime_ai_provider_configs ORDER BY provider_id").all().map((row) => ({ ...row }));
+    assert.deepEqual(rows, [
+      { provider_id: "deepseek", model: "deepseek-reasoner", key_last_four: "1234" },
+      { provider_id: "qwen", model: "qwen-custom-edu", key_last_four: "5678" },
+    ]);
+    const status = await jsonRequest(fetch, `${base}/api/v1/admin/ai/status`);
+    assert.equal(status.body.data.providers.filter((item) => item.configured).length, 2);
+    assert.equal(status.body.data.providers.find((item) => item.id === "qwen").active, true);
+    assert.doesNotMatch(JSON.stringify(status.body), /sk-(?:deepseek|qwen)-example/);
+  }, registry);
 });
 
 test("R3-AI-02 v1 问答经 course-ai-tutor 与 ModelGateway 后持久化运行记录", async () => {

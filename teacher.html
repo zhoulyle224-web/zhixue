@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="智学双擎教师端：按课程和班级导入数据、研判学情、发布分层任务">
-  <title>教师学情工作台｜智学双擎</title><link rel="stylesheet" href="assets/style.css"><link rel="stylesheet" href="assets/concept.css"><link rel="stylesheet" href="assets/accessibility.css">
+  <title>教师学情工作台｜智学双擎</title><link rel="stylesheet" href="assets/style.css"><link rel="stylesheet" href="assets/concept.css"><link rel="stylesheet" href="assets/ai-config.css"><link rel="stylesheet" href="assets/accessibility.css">
 </head>
 <body data-page="teacher" class="auth-pending concept-workspace"><canvas id="particles"></canvas><div class="orb one"></div><div class="orb two"></div>
 <nav class="topnav fixed workspace-nav"><a class="brand concept-brand" href="index.html"><span class="brand-symbol" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b></span><span>智学双擎<small>ZHIXUE DUAL ENGINE</small></span></a><p class="workspace-motto">让智慧的教学，<br>让每一位学生被看见。</p><div class="workspace-search"><span>⌕</span>搜索课程、班级或学生…</div><div class="user-actions"><button class="role-switch-btn" id="roleSwitchBtn" data-switch-role="student">切换学生视角</button><span class="notify-dot">♧<i>1</i></span><span class="user-chip"><i>教</i><b id="userIdentity">演示教师</b></span><button class="logout-btn" id="logoutBtn">退出</button></div></nav>
@@ -100,20 +100,36 @@
       <article class="card panel timeline-card"><div class="card-head"><h3>教学改进时间线</h3><small>当前批次与任务事件</small></div><div class="timeline" id="teacherTimeline"><p class="data-empty">暂无当前批次数据</p></div></article>
     </section>
 
-    <section class="view" id="aiInterface">
-      <div class="section-title"><div><h2>AI 接口</h2><p>只需录入 API Key；Provider、接口地址、模型和 Skill 绑定由服务端确认版本固定。</p></div><span class="evidence-pill" id="aiConfigBadge">正在检查</span></div>
-      <div class="grid dashboard-grid">
-        <article class="card panel">
-          <div class="card-head"><div><h3>服务端密钥配置</h3><small>密钥一次性提交，不写入浏览器存储、源码、日志或普通数据库字段</small></div></div>
-          <label class="field"><span>API Key</span><input id="aiApiKey" type="password" autocomplete="new-password" maxlength="4096" placeholder="留空表示不修改原密钥"></label>
-          <div class="actions"><button class="btn primary" id="saveAiKey">保存并验证</button></div>
-          <p class="form-status" id="aiConfigMessage">正在读取服务端配置状态…</p>
+    <section class="view ai-config-view" id="aiInterface">
+      <article class="ai-config-hero">
+        <div class="ai-hero-copy"><span class="ai-kicker">MODEL CONNECTION CENTER</span><h2>连接你的 AI 模型</h2><p>选择服务商、指定模型并验证密钥。地址由服务端安全白名单管理，密钥始终留在服务端。</p><div class="ai-hero-points"><span>✓ 多模型接入</span><span>✓ 独立密钥</span><span>✓ 服务端验证</span></div></div>
+        <div class="ai-orbit" aria-hidden="true"><i></i><i></i><i></i><b>AI</b></div>
+        <span class="ai-status-badge checking" id="aiConfigBadge">正在检查</span>
+      </article>
+
+      <div class="ai-workspace-grid">
+        <article class="ai-provider-panel">
+          <div class="ai-panel-head"><div><span class="step-no">01</span><div><h3>选择模型服务</h3><p>每家服务商可保存独立配置</p></div></div><span class="provider-count" id="aiProviderCount">4 个服务</span></div>
+          <div class="ai-provider-grid" id="aiProviderGrid" aria-label="模型服务商"></div>
+          <div class="ai-security-note"><span class="security-icon">⌾</span><div><b>安全连接</b><p>接口地址不可由浏览器修改，防止请求被导向未授权站点。</p></div></div>
         </article>
-        <article class="card panel">
-          <div class="card-head"><div><h3>真实性边界</h3><small>所有 AI 调用均由服务端 Skill 经 ModelGateway 执行</small></div></div>
-          <div class="detail-records"><article><b>未配置或故障</b><p>页面明确显示“AI 未生成”，仅可展示课程检索结果。</p></article><article><b>生成成功</b><p>必须存在 ai_run_id、Skill 版本、模型响应和成功持久化记录。</p></article><article><b>引用校验</b><p>无法定位到当前课程激活资源的引用会在返回学生前被拦截。</p></article></div>
+
+        <article class="ai-editor-panel">
+          <div class="ai-panel-head"><div><span class="step-no">02</span><div><h3 id="aiEditorTitle">配置模型</h3><p id="aiEditorDescription">请选择左侧服务商</p></div></div><span class="ai-live-dot"><i></i>服务端验证</span></div>
+          <form id="aiConfigForm" novalidate>
+            <label class="ai-field"><span>模型名称 <em>可自定义</em></span><input id="aiModelName" name="model" list="aiModelSuggestions" maxlength="120" autocomplete="off" placeholder="例如 qwen-plus"><datalist id="aiModelSuggestions"></datalist><small>可从建议中选择，也可填写该服务商支持的其他模型 ID</small></label>
+            <label class="ai-field"><span>API Key <em>仅本次提交</em></span><div class="ai-key-control"><input id="aiApiKey" name="apiKey" type="password" autocomplete="new-password" maxlength="4096" placeholder="输入新的 API Key"><button type="button" id="toggleAiKey" aria-label="显示 API Key" title="显示或隐藏">显示</button></div><small id="aiKeyHint">不会写入浏览器存储、源码或日志</small></label>
+            <button class="ai-save-button" id="saveAiKey" type="submit"><span>保存并验证连接</span><i>→</i></button>
+          </form>
+          <div class="ai-form-message neutral" id="aiConfigMessage" role="status" aria-live="polite"><span>i</span><p>正在读取服务端配置状态…</p></div>
         </article>
       </div>
+
+      <article class="ai-trust-strip">
+        <div><span>◇</span><p><b>浏览器零留存</b>原始密钥不进入 localStorage 或页面回显</p></div>
+        <div><span>⌁</span><p><b>配置相互隔离</b>不同服务商、不同演示沙箱互不共享密钥</p></div>
+        <div><span>✓</span><p><b>验证后启用</b>只有连通性检查通过的模型才成为当前模型</p></div>
+      </article>
     </section>
   </main>
 </div>

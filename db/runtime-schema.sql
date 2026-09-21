@@ -236,6 +236,23 @@ CREATE TABLE IF NOT EXISTS runtime_ai_config (
   updated_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS runtime_ai_provider_configs (
+  provider_id TEXT PRIMARY KEY,
+  secret_ref TEXT NOT NULL,
+  key_last_four TEXT NOT NULL,
+  model TEXT NOT NULL,
+  verification_status TEXT NOT NULL CHECK (verification_status IN ('verified','failed','unconfigured')),
+  verified_at TEXT,
+  updated_by_account_id TEXT,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS runtime_ai_settings (
+  id TEXT PRIMARY KEY CHECK (id = 'default'),
+  active_provider_id TEXT,
+  updated_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS runtime_ai_runs (
   id TEXT PRIMARY KEY,
   request_id TEXT NOT NULL UNIQUE,

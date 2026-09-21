@@ -47,3 +47,21 @@ test("教师 M2 证据区显示固定研判 ID，新导入时清除旧 ID", asyn
   assert.match(app, /m2State\.analysisRunId=m2State\.analysis\?run\.analysisRunId:null/);
   assert.doesNotMatch(app, /m2State\.batch\.status='analyzed'/);
 });
+
+test("AI 接口支持多服务商、模型名称和独立密钥且学生端无配置入口", async () => {
+  const [teacher, student, client, css] = await Promise.all([
+    readFile(new URL("teacher.html", root), "utf8"),
+    readFile(new URL("student.html", root), "utf8"),
+    readFile(new URL("assets/ai-config.js", root), "utf8"),
+    readFile(new URL("assets/ai-config.css", root), "utf8"),
+  ]);
+  for (const id of ["aiProviderGrid", "aiModelName", "aiApiKey", "toggleAiKey", "saveAiKey"]) {
+    assert.match(teacher, new RegExp(`id="${id}"`));
+  }
+  assert.match(teacher, /assets\/ai-config\.css/);
+  assert.match(client, /providerId: provider\.id, model, apiKey/);
+  assert.match(client, /state\.persistence === 'sandbox'/);
+  assert.doesNotMatch(client, /localStorage|sessionStorage|indexedDB/i);
+  assert.match(css, /\.ai-provider-grid/);
+  assert.doesNotMatch(student, /id="aiInterfaceMenu"|id="aiProviderGrid"/);
+});

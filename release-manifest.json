@@ -1,7 +1,7 @@
 {
   "project": "智学双擎",
-  "releaseVersion": "2026.09-round3-p0-confirmed",
-  "createdAt": "2026-09-20T00:00:00.000Z",
+  "releaseVersion": "2026.09-round3-ai-multiprovider",
+  "createdAt": "2026-09-21T00:00:00.000Z",
   "dataClassification": "synthetic-demo-only",
   "coreScenarios": [
     "学生课后即时答疑",

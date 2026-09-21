@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { ModelGatewayError } from "./model-gateway.mjs";
+import { ModelGatewayError, validateModelName } from "./model-gateway.mjs";
 
 export class AiServiceError extends Error {
   constructor(code, message, status = 400, details = {}) { super(message); this.code = code; this.status = status; this.details = details; }
@@ -9,31 +9,77 @@ function digest(value) {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
 
-export function createAiService({ runtimeStore, modelGateway, secretStore }) {
+function gatewayAdapter(modelGateway) {
+  if (typeof modelGateway?.gatewayFor === "function" && typeof modelGateway?.listProviders === "function") return modelGateway;
+  const providerId = modelGateway?.providerId || "qwen";
+  const model = modelGateway?.model || "qwen-plus";
+  return {
+    defaultProviderId: providerId,
+    listProviders: () => [{ id: providerId, label: providerId === "qwen" ? "通义千问" : providerId, shortLabel: providerId, accent: "violet", description: "服务端模型接口", defaultModel: model, models: [model] }],
+    gatewayFor: (requestedProvider, requestedModel) => {
+      if (requestedProvider && requestedProvider !== providerId) throw new ModelGatewayError("AI_PROVIDER_UNSUPPORTED", "暂不支持该模型服务商。", { status: 400 });
+      if (requestedModel && requestedModel !== model) throw new ModelGatewayError("AI_MODEL_UNSUPPORTED", "测试网关不支持该模型。", { status: 400 });
+      return modelGateway;
+    },
+  };
+}
+
+export function createAiService({ runtimeStore, modelGateway, secretStore, persistence = "server" }) {
+  const gateways = gatewayAdapter(modelGateway);
+
   async function status() {
-    const config = runtimeStore.getAiConfig();
-    const secretAvailable = Boolean(config?.secretRef && await secretStore.get(config.secretRef));
+    const active = runtimeStore.getAiConfig();
+    const listedConfigs = runtimeStore.listAiConfigs?.() || [];
+    const configs = new Map((listedConfigs.length ? listedConfigs : active ? [active] : []).map((item) => [item.providerId, item]));
+    const providers = await Promise.all(gateways.listProviders().map(async (preset) => {
+      const config = configs.get(preset.id);
+      const secretAvailable = Boolean(config?.secretRef && await secretStore.get(config.secretRef));
+      const configured = Boolean(config?.verificationStatus === "verified" && secretAvailable);
+      return {
+        ...preset,
+        configured,
+        active: configured && active?.providerId === preset.id,
+        keyMask: configured && config?.keyLastFour ? `••••${config.keyLastFour}` : null,
+        model: config?.model || preset.defaultModel,
+        verifiedAt: configured ? config.verifiedAt : null,
+      };
+    }));
+    const activeProvider = providers.find((item) => item.active);
     return {
-      configured: Boolean(config && config.verificationStatus === "verified" && secretAvailable),
-      status: config?.verificationStatus === "verified" && secretAvailable ? "available" : "unconfigured",
-      keyMask: config?.keyLastFour ? `••••${config.keyLastFour}` : null,
-      verifiedAt: config?.verifiedAt || null,
+      configured: Boolean(activeProvider),
+      status: activeProvider ? "available" : "unconfigured",
+      activeProviderId: activeProvider?.id || null,
+      keyMask: activeProvider?.keyMask || null,
+      verifiedAt: activeProvider?.verifiedAt || null,
+      persistence,
+      providers,
     };
   }
 
-  async function configureKey(apiKey, accountId) {
+  async function configureKey(apiKey, accountId, options = {}) {
     const key = String(apiKey || "").trim();
     if (key.length < 8 || key.length > 4096) throw new AiServiceError("AI_KEY_INVALID", "请输入有效的 API Key。");
+    const providerId = String(options.providerId || gateways.defaultProviderId || gateways.listProviders()[0]?.id || "qwen");
+    const preset = gateways.listProviders().find((item) => item.id === providerId);
+    if (!preset) throw new AiServiceError("AI_PROVIDER_UNSUPPORTED", "暂不支持该模型服务商。");
+    let model;
+    let gateway;
+    try {
+      model = validateModelName(options.model, preset.defaultModel);
+      gateway = gateways.gatewayFor(providerId, model);
+    } catch (error) {
+      throw new AiServiceError(error.code || "AI_CONFIG_INVALID", error.message || "模型配置无效。", error.status || 400);
+    }
     let health;
-    try { health = await modelGateway.healthCheck({ apiKey: key }); }
+    try { health = await gateway.healthCheck({ apiKey: key }); }
     catch (error) {
       const mapped = error instanceof ModelGatewayError ? error : new ModelGatewayError("AI_PROVIDER_UNAVAILABLE", "模型服务当前不可用。", { retryable: true });
       throw new AiServiceError(mapped.code, mapped.message, mapped.status, { saved: false, retryable: mapped.retryable });
     }
-    const secretRef = "local://ai/provider/default";
+    const secretRef = `local://ai/provider/${providerId}`;
     await secretStore.set(secretRef, key);
-    runtimeStore.saveAiConfig({ secretRef, keyLastFour: key.slice(-4), accountId });
-    return { configured: true, status: "available", keyMask: `••••${key.slice(-4)}`, verifiedAt: new Date().toISOString(), providerVerified: Boolean(health.providerId) };
+    runtimeStore.saveAiConfig({ providerId, secretRef, keyLastFour: key.slice(-4), model, accountId });
+    return { ...await status(), providerVerified: Boolean(health.providerId) };
   }
 
   async function generate({ requestId = `req_${randomUUID()}`, purpose, skillId, skillVersion, actorId, tenantId = "local", courseId = null, sessionId = null, messages, evidence = [] }) {
@@ -47,7 +93,8 @@ export function createAiService({ runtimeStore, modelGateway, secretStore }) {
     }
     runtimeStore.updateAiRun(aiRunId, { status: "generating" });
     try {
-      const result = await modelGateway.chat({ apiKey, messages });
+      const gateway = gateways.gatewayFor(config.providerId, config.model);
+      const result = await gateway.chat({ apiKey, messages });
       runtimeStore.updateAiRun(aiRunId, {
         status: "validating", providerId: result.providerId, model: result.model,
         modelRevision: result.modelRevision, tokenUsage: result.tokenUsage,

@@ -493,25 +493,49 @@ export function createRuntimeStore(dbPath = DEFAULT_RUNTIME_DB, {
     return db.prepare("SELECT * FROM runtime_export_audits WHERE export_id=?").get(exportId) || null;
   }
 
-  function getAiConfig() {
-    const row = db.prepare("SELECT * FROM runtime_ai_config WHERE id='default'").get();
+  function mapAiConfig(row) {
     return row ? {
-      secretRef: row.secret_ref, keyLastFour: row.key_last_four,
+      providerId: row.provider_id || "qwen", secretRef: row.secret_ref,
+      keyLastFour: row.key_last_four, model: row.model || "qwen-plus",
       verificationStatus: row.verification_status, verifiedAt: row.verified_at,
       updatedByAccountId: row.updated_by_account_id, updatedAt: row.updated_at,
     } : null;
   }
 
-  function saveAiConfig({ secretRef, keyLastFour, accountId }) {
+  function listAiConfigs() {
+    return db.prepare("SELECT * FROM runtime_ai_provider_configs ORDER BY provider_id").all().map(mapAiConfig);
+  }
+
+  function getAiConfig(providerId = null) {
+    let row;
+    if (providerId) row = db.prepare("SELECT * FROM runtime_ai_provider_configs WHERE provider_id=?").get(providerId);
+    else row = db.prepare(`SELECT c.* FROM runtime_ai_provider_configs c
+      JOIN runtime_ai_settings s ON s.id='default' AND s.active_provider_id=c.provider_id`).get();
+    if (row) return mapAiConfig(row);
+    const legacy = db.prepare("SELECT * FROM runtime_ai_config WHERE id='default'").get();
+    return legacy ? mapAiConfig({ ...legacy, provider_id: "qwen", model: "qwen-plus" }) : null;
+  }
+
+  function saveAiConfig({ providerId = "qwen", secretRef, keyLastFour, model = "qwen-plus", accountId }) {
     const now = new Date().toISOString();
-    db.prepare(`INSERT INTO runtime_ai_config
-      (id,secret_ref,key_last_four,verification_status,verified_at,updated_by_account_id,updated_at)
-      VALUES('default',?,?,'verified',?,?,?)
-      ON CONFLICT(id) DO UPDATE SET secret_ref=excluded.secret_ref,
-        key_last_four=excluded.key_last_four,verification_status='verified',
-        verified_at=excluded.verified_at,updated_by_account_id=excluded.updated_by_account_id,
-        updated_at=excluded.updated_at`).run(secretRef, keyLastFour, now, accountId, now);
-    return getAiConfig();
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      db.prepare(`INSERT INTO runtime_ai_provider_configs
+        (provider_id,secret_ref,key_last_four,model,verification_status,verified_at,updated_by_account_id,updated_at)
+        VALUES(?,?,?,?,'verified',?,?,?)
+        ON CONFLICT(provider_id) DO UPDATE SET secret_ref=excluded.secret_ref,
+          key_last_four=excluded.key_last_four,model=excluded.model,verification_status='verified',
+          verified_at=excluded.verified_at,updated_by_account_id=excluded.updated_by_account_id,
+          updated_at=excluded.updated_at`).run(providerId, secretRef, keyLastFour, model, now, accountId, now);
+      db.prepare(`INSERT INTO runtime_ai_settings (id,active_provider_id,updated_at)
+        VALUES('default',?,?) ON CONFLICT(id) DO UPDATE SET
+        active_provider_id=excluded.active_provider_id,updated_at=excluded.updated_at`).run(providerId, now);
+      db.exec("COMMIT");
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
+    return getAiConfig(providerId);
   }
 
   function createAiRun(row) {
@@ -575,6 +599,7 @@ export function createRuntimeStore(dbPath = DEFAULT_RUNTIME_DB, {
     writeExportAudit,
     getExportAudit,
     getAiConfig,
+    listAiConfigs,
     saveAiConfig,
     createAiRun,
     updateAiRun,
